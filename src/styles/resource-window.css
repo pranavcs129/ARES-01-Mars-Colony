@@ -1,0 +1,1061 @@
+/**
+ * Colony Resource Management Window — Visual Flow & Allocation Control
+ *
+ * Visual Aerospace NASA Mission-Control UI:
+ * - Graphic Resource Flow Hub (Resource Center Node → Consuming Facility Nodes)
+ * - Compact Interactive Allocation Cards with Steppers/Sliders (100 / 75 / 50 / 25 / 0%)
+ * - Live Dynamic Balance Panel (Generation - Usage = Shortage / Balance + Savings)
+ * - Visual Recovery Source Cards (Backup Power, Emergency Reserve, Solar Recovery)
+ * - Compact Storage Recovery Bar & Bottom Mission Control Status
+ */
+
+/* ==========================================================================
+   1. MODAL BACKDROP & MAIN CONTAINER
+   ========================================================================== */
+.rm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 7, 13, 0.60);
+  backdrop-filter: blur(8px) saturate(110%);
+  -webkit-backdrop-filter: blur(8px) saturate(110%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rm-modal-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.rm-window-container {
+  width: min(920px, 94vw);
+  max-height: 90vh;
+  background:
+    radial-gradient(
+      circle at 15% 10%,
+      rgba(255, 255, 255, 0.09),
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 85% 90%,
+      rgba(255, 120, 60, 0.035),
+      transparent 45%
+    ),
+    rgba(20, 20, 24, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.20),
+    inset 1px 0 0 rgba(255, 255, 255, 0.06),
+    0 32px 80px rgba(0, 0, 0, 0.38);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #f1f5f9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  animation: rmWindowPop 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes rmWindowPop {
+  0% { transform: scale(0.96) translateY(12px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* ==========================================================================
+   2. HEADER
+   ========================================================================== */
+.rm-header {
+  padding: 0.9rem 1.4rem 0.75rem 1.4rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.rm-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rm-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.rm-title-icon {
+  width: 22px;
+  height: 22px;
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rm-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #f8fafc;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.rm-subtitle {
+  font-size: 0.74rem;
+  color: #94a3b8;
+  letter-spacing: 0.02em;
+}
+
+.rm-close-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.rm-close-btn:hover {
+  background: rgba(248, 113, 113, 0.2);
+  border-color: rgba(248, 113, 113, 0.4);
+  color: #f87171;
+}
+
+.rm-submeta-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.68rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rm-meta-pill {
+  padding: 0.15rem 0.55rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.65rem;
+}
+
+.rm-meta-pill.status-normal {
+  background: rgba(74, 222, 128, 0.12);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.25);
+}
+
+.rm-meta-pill.status-recovering {
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.rm-meta-pill.status-critical {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+/* ==========================================================================
+   3. SCROLLABLE BODY
+   ========================================================================== */
+.rm-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 1.1rem 1.4rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  scroll-behavior: smooth;
+}
+
+.rm-body > * {
+  flex-shrink: 0;
+}
+
+.rm-body::-webkit-scrollbar {
+  width: 6px;
+}
+.rm-body::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+.rm-body::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.25);
+  border-radius: 3px;
+}
+.rm-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.45);
+}
+
+/* ==========================================================================
+   4. COMPACT ACTIVE INCIDENT STRIP
+   ========================================================================== */
+.vrm-incident-strip {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.65rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.vrm-incident-strip.has-disaster {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.35);
+  box-shadow: 0 0 18px rgba(239, 68, 68, 0.1);
+}
+
+.vrm-incident-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.vrm-incident-badge {
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.vrm-incident-badge.sev-high {
+  background: #ef4444;
+  color: #fff;
+}
+.vrm-incident-badge.sev-mod {
+  background: #f59e0b;
+  color: #fff;
+}
+.vrm-incident-badge.sev-nom {
+  background: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.vrm-incident-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #f8fafc;
+}
+
+.vrm-incident-dur {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.vrm-incident-metrics {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.75rem;
+}
+
+.vrm-incident-metric-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.vrm-incident-metric-label {
+  font-size: 0.58rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.vrm-incident-metric-val {
+  font-weight: 700;
+}
+
+.vrm-incident-metric-val.drop {
+  color: #f87171;
+}
+
+.vrm-incident-metric-val.shortage {
+  color: #ef4444;
+  font-weight: 800;
+}
+
+.vrm-incident-metric-val.nominal {
+  color: #4ade80;
+}
+
+/* ==========================================================================
+   5. VISUAL RESOURCE-FLOW DIAGRAM (CENTER HUB → FACILITIES)
+   ========================================================================== */
+.vrm-flow-diagram {
+  background: radial-gradient(ellipse at top, rgba(15, 23, 42, 0.85) 0%, rgba(9, 13, 22, 0.95) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  border-radius: 10px;
+  padding: 1rem 1.2rem 0.9rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow: visible;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Central Node */
+.vrm-center-node {
+  background: rgba(15, 23, 42, 0.92);
+  border: 2px solid #38bdf8;
+  border-radius: 10px;
+  padding: 0.65rem 1.4rem;
+  text-align: center;
+  box-shadow: 0 0 24px rgba(56, 189, 248, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  min-width: 240px;
+  position: relative;
+  z-index: 2;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.vrm-center-node.is-shortage {
+  border-color: #ef4444;
+  box-shadow: 0 0 26px rgba(239, 68, 68, 0.22);
+}
+
+.vrm-center-node.is-stable {
+  border-color: #4ade80;
+  box-shadow: 0 0 24px rgba(74, 222, 128, 0.18);
+}
+
+.vrm-center-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #f8fafc;
+  text-transform: uppercase;
+}
+
+.vrm-center-ratio {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  margin-top: 0.15rem;
+}
+
+.vrm-center-ratio b {
+  color: #f1f5f9;
+}
+
+.vrm-center-shortage {
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.85rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.vrm-center-shortage.neg {
+  color: #ef4444;
+}
+
+.vrm-center-shortage.pos {
+  color: #4ade80;
+}
+
+/* Branching Connector Lines */
+.vrm-branch-arrows {
+  width: 100%;
+  height: 28px;
+  margin: 0.3rem 0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.vrm-branch-arrows svg {
+  width: 100%;
+  height: 100%;
+  stroke: rgba(56, 189, 248, 0.4);
+  stroke-width: 1.8;
+  fill: none;
+}
+
+/* Branch Facility Nodes Row */
+.vrm-branches-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.6rem;
+  width: 100%;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.vrm-branch-card {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.55rem 0.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.vrm-branch-card.is-protected {
+  border-color: rgba(74, 222, 128, 0.3);
+  background: rgba(74, 222, 128, 0.04);
+}
+
+.vrm-branch-card.is-reduced {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.vrm-branch-card.is-paused {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.05);
+  opacity: 0.8;
+}
+
+.vrm-branch-name {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vrm-branch-draw {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #f1f5f9;
+}
+
+.vrm-branch-pct {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.vrm-branch-card.is-reduced .vrm-branch-pct {
+  color: #fbbf24;
+}
+
+.vrm-branch-card.is-paused .vrm-branch-pct {
+  color: #f87171;
+}
+
+/* ==========================================================================
+   6. MAIN WORKSPACE TWO-COLUMN GRID
+   ========================================================================== */
+.vrm-workspace-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 1.1rem;
+}
+
+@media (max-width: 820px) {
+  .vrm-workspace-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* General Panel Box */
+.vrm-panel {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.vrm-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 0.5rem;
+}
+
+.vrm-panel-title {
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #f8fafc;
+  text-transform: uppercase;
+}
+
+.vrm-panel-sub {
+  font-size: 0.65rem;
+  color: #64748b;
+  letter-spacing: 0.02em;
+}
+
+/* ==========================================================================
+   7. COLONY RESPONSE (AUTOMATIC RESOURCE MANAGEMENT)
+   ========================================================================== */
+.vrm-auto-badge {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Affected Resource Shortage Box */
+.vrm-response-shortage-box {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.vrm-response-shortage-box.has-shortage {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.vrm-response-shortage-box.is-balanced {
+  border-color: rgba(74, 222, 128, 0.3);
+  background: rgba(74, 222, 128, 0.05);
+}
+
+.vrm-shortage-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.vrm-shortage-tag {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #f8fafc;
+  text-transform: uppercase;
+}
+
+.vrm-shortage-amount {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.vrm-shortage-amount.neg {
+  color: #ef4444;
+}
+
+.vrm-shortage-amount.pos {
+  color: #4ade80;
+}
+
+.vrm-shortage-sub {
+  font-size: 0.64rem;
+  color: #94a3b8;
+  letter-spacing: 0.02em;
+}
+
+/* Response List & Cards */
+.vrm-response-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.vrm-response-card {
+  background: rgba(0, 0, 0, 0.26);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  padding: 0.55rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  transition: all 0.15s ease;
+}
+
+.vrm-response-card:hover {
+  background: rgba(0, 0, 0, 0.35);
+  border-color: rgba(56, 189, 248, 0.2);
+}
+
+.vrm-response-card.is-protected {
+  border-color: rgba(74, 222, 128, 0.25);
+  background: rgba(74, 222, 128, 0.03);
+}
+
+.vrm-response-card.is-reduced {
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.04);
+}
+
+.vrm-response-card.is-paused {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.vrm-resp-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.vrm-resp-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.vrm-resp-badge {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.vrm-resp-badge.badge-protected {
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.35);
+}
+
+.vrm-resp-badge.badge-reduced {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.vrm-resp-badge.badge-paused {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.vrm-resp-badge.badge-nominal {
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.vrm-resp-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.72rem;
+}
+
+.vrm-resp-transition {
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.vrm-response-card.is-reduced .vrm-resp-transition {
+  color: #fbbf24;
+}
+
+.vrm-response-card.is-paused .vrm-resp-transition {
+  color: #f87171;
+}
+
+.vrm-response-card.is-protected .vrm-resp-transition {
+  color: #4ade80;
+}
+
+.vrm-resp-saved {
+  color: #94a3b8;
+}
+
+.vrm-resp-saved b {
+  color: #38bdf8;
+  font-weight: 800;
+}
+
+.vrm-response-card.is-protected .vrm-resp-saved b {
+  color: #4ade80;
+}
+
+/* ==========================================================================
+   8. DYNAMIC RESOURCE BALANCE PANEL
+   ========================================================================== */
+.vrm-balance-card {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+.vrm-bal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.vrm-bal-val {
+  font-weight: 700;
+}
+
+.vrm-bal-val.pos {
+  color: #4ade80;
+}
+
+.vrm-bal-val.neg {
+  color: #f87171;
+}
+
+.vrm-bal-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0.2rem 0;
+}
+
+.vrm-bal-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.vrm-bal-total-row.is-shortage {
+  color: #ef4444;
+}
+
+.vrm-bal-total-row.is-balanced {
+  color: #4ade80;
+}
+
+/* Dynamic Savings Notification Box */
+.vrm-savings-callout {
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+.vrm-savings-label {
+  color: #94a3b8;
+}
+
+.vrm-savings-val {
+  font-weight: 800;
+  color: #38bdf8;
+}
+
+/* ==========================================================================
+   9. RECOVERY SOURCE CARDS (BACKUP, RESERVE, SOLAR)
+   ========================================================================== */
+.vrm-recovery-sources-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.vrm-source-card {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 0.55rem 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.15s ease;
+}
+
+.vrm-source-card.is-active {
+  border-color: rgba(56, 189, 248, 0.35);
+  background: rgba(56, 189, 248, 0.06);
+}
+
+.vrm-source-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.vrm-source-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.vrm-source-boost {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #38bdf8;
+}
+
+.vrm-source-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f1f5f9;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 0.35rem 0.75rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.vrm-source-btn:hover {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+.vrm-source-btn.is-active-btn {
+  background: #38bdf8;
+  border-color: #38bdf8;
+  color: #090d16;
+  font-weight: 800;
+}
+
+.vrm-source-tag {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.1);
+  border: 1px solid rgba(74, 222, 128, 0.25);
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+}
+
+/* ==========================================================================
+   10. COMPACT RECOVERY PROGRESS
+   ========================================================================== */
+.vrm-recovery-box {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 0.65rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.vrm-rec-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+}
+
+.vrm-rec-title {
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #f1f5f9;
+}
+
+.vrm-rec-range {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  color: #94a3b8;
+  font-size: 0.68rem;
+}
+
+.vrm-rec-pills {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.vrm-rec-pill {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+}
+
+.vrm-rec-pill.is-active {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.vrm-progress-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.vrm-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8 0%, #4ade80 100%);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.vrm-progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.65rem;
+  color: #94a3b8;
+}
+
+/* ==========================================================================
+   11. BOTTOM MISSION CONTROL STATUS BAR & TEST ROW
+   ========================================================================== */
+.vrm-status-bar {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+}
+
+.vrm-status-bar.status-normal {
+  border-color: rgba(74, 222, 128, 0.3);
+}
+
+.vrm-status-bar.status-recovering {
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.vrm-status-bar.status-critical {
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+.vrm-status-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.vrm-status-val {
+  font-weight: 800;
+}
+
+.status-normal .vrm-status-val { color: #4ade80; }
+.status-recovering .vrm-status-val { color: #38bdf8; }
+.status-critical .vrm-status-val { color: #f87171; }
+
+.vrm-status-sub {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+/* Test Buttons Row */
+.vrm-test-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0;
+  flex-wrap: wrap;
+}
+
+.vrm-test-label {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.6rem;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.vrm-test-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  font-size: 0.62rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.vrm-test-btn:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+}
+
+/* Responsive adjustments for flow diagram on narrow viewports */
+@media (max-width: 680px) {
+  .vrm-branches-row {
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  }
+  .vrm-branch-arrows {
+    display: none;
+  }
+}
+

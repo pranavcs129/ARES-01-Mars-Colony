@@ -1,0 +1,143 @@
+/* ═══════════════════════════════════════════════════════════
+   ARES-01 Liquid Glass — Aerospace Visual Surface Treatment
+   Modern translucent glass floating over the Three.js Mars scene:
+   - High transparency allowing Mars landscape to show through
+   - Soft optical blur & saturation
+   - Subtle dual-radial refraction & lighting highlights
+   - Crisp top/left edge lighting
+   - Zero murky brown/orange opacity
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Base Floating Glass Surface ── */
+.ares-liquid-glass {
+  background:
+    radial-gradient(
+      circle at 20% 10%,
+      rgba(255, 255, 255, 0.09),
+      transparent 35%
+    ),
+    radial-gradient(
+      circle at 80% 90%,
+      rgba(255, 120, 60, 0.035),
+      transparent 40%
+    ),
+    rgba(25, 25, 28, 0.28);
+  backdrop-filter: blur(24px) saturate(145%);
+  -webkit-backdrop-filter: blur(24px) saturate(145%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 1px 0 0 rgba(255, 255, 255, 0.05),
+    0 20px 60px rgba(0, 0, 0, 0.30);
+}
+
+/* ── Compact Glass (HUD pills, small capsules, controls) ── */
+.ares-glass-pill {
+  background:
+    radial-gradient(
+      circle at 20% 15%,
+      rgba(255, 255, 255, 0.09),
+      transparent 35%
+    ),
+    radial-gradient(
+      circle at 85% 85%,
+      rgba(255, 120, 60, 0.03),
+      transparent 40%
+    ),
+    rgba(25, 25, 28, 0.26);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 1px 0 0 rgba(255, 255, 255, 0.05),
+    0 10px 28px rgba(0, 0, 0, 0.25);
+}
+
+/* ── Panel Glass (Colony Monitoring, Progression, Facility Inspector) ── */
+.ares-glass-panel {
+  background:
+    radial-gradient(
+      circle at 20% 10%,
+      rgba(255, 255, 255, 0.08),
+      transparent 35%
+    ),
+    radial-gradient(
+      circle at 80% 90%,
+      rgba(255, 120, 60, 0.035),
+      transparent 40%
+    ),
+    rgba(25, 25, 28, 0.28);
+  backdrop-filter: blur(24px) saturate(145%);
+  -webkit-backdrop-filter: blur(24px) saturate(145%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 1px 0 0 rgba(255, 255, 255, 0.05),
+    0 24px 64px rgba(0, 0, 0, 0.32);
+}
+
+/* ── Event Notification Glass ── */
+.ares-glass-notification {
+  background:
+    radial-gradient(
+      circle at 20% 20%,
+      rgba(255, 255, 255, 0.08),
+      transparent 35%
+    ),
+    rgba(25, 25, 28, 0.32);
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+/* ── Modal Glass (Resource Management Dialog) ── */
+.ares-glass-modal {
+  background:
+    radial-gradient(
+      circle at 15% 10%,
+      rgba(255, 255, 255, 0.09),
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 85% 90%,
+      rgba(255, 120, 60, 0.035),
+      transparent 45%
+    ),
+    rgba(20, 20, 24, 0.35);
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.20),
+    inset 1px 0 0 rgba(255, 255, 255, 0.06),
+    0 32px 80px rgba(0, 0, 0, 0.38);
+}
+
+/* ── Translucent Glass Button Controls ── */
+.ares-glass-btn {
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.85);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ares-glass-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.ares-glass-btn:active {
+  transform: translateY(0);
+}
