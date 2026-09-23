@@ -25,7 +25,7 @@ import java.util.*;
  * 12. Save/update current state
  * 13. Record history
  */
-public class SimulationEngine {
+public final class SimulationEngine {
     private int sol;
     private double hour;
     private final ResourceManager resourceManager;

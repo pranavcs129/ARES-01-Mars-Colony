@@ -79,11 +79,6 @@ public class ManagementSystem {
      * @param resources colony resource map
      * @return list of automatic response actions taken
      */
-    /**
-     * Automatically evaluates colony resource shortages and executes load shedding.
-     * Calculates BEFORE -> AFTER operating levels and resource saved per facility.
-     * Higher-priority systems remain protected; non-essential systems are reduced or paused.
-     */
     public List<ResponseAction> manageResourceShortage(String resourceName, 
                                                        List<Facility> facilities, 
                                                        Map<String, Resource> resources) {

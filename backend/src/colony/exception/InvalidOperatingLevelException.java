@@ -5,6 +5,7 @@ package colony.exception;
  * or attempting to manually throttle protected systems like Life Support.
  */
 public class InvalidOperatingLevelException extends ColonyException {
+    private static final long serialVersionUID = 1L;
     private final String facilityName;
     private final double attemptedLevel;
 

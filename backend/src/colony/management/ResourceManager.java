@@ -19,13 +19,17 @@ public class ResourceManager {
     }
 
     private void initDefaultResources() {
-        addResource(new Oxygen(900.0, 1000.0, 200.0));
-        addResource(new Water(800.0, 1000.0, 250.0));
-        addResource(new Food(850.0, 1000.0, 200.0));
-        addResource(new Power(480.0, 500.0, 100.0));
+        Resource o2 = new Oxygen(900.0, 1000.0, 200.0);
+        Resource h2o = new Water(800.0, 1000.0, 250.0);
+        Resource food = new Food(850.0, 1000.0, 200.0);
+        Resource pwr = new Power(480.0, 500.0, 100.0);
+        resources.put(o2.getName(), o2);
+        resources.put(h2o.getName(), h2o);
+        resources.put(food.getName(), food);
+        resources.put(pwr.getName(), pwr);
     }
 
-    public void addResource(Resource res) {
+    public final void addResource(Resource res) {
         resources.put(res.getName(), res);
     }
 
