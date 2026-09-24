@@ -217,7 +217,57 @@ export class InfoOverlay {
             </div>
           </div>
         </div>
+
+        <!-- [10] CINEMATIC PERSPECTIVE / TOUR TOGGLE -->
+        <button id="btn-toggle-cinema-hud" class="hud-capsule hud-cinema-capsule ares-glass-pill" title="Toggle Cinematic Perspective & Director Tour Mode (Hotkey: C)">
+          <div class="hud-cinema-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+              <path d="M15 10l5-3v10l-5-3v-4z"/>
+              <rect x="2" y="6" width="13" height="12" rx="2"/>
+            </svg>
+          </div>
+          <div class="hud-text-stack">
+            <span id="hud-cinema-status-label" class="hud-label-primary">CINEMA</span>
+            <span id="hud-cinema-sub-label" class="hud-label-secondary">TOUR / 3D</span>
+          </div>
+        </button>
       </header>
+
+      <!-- Cinematic CinemaScope 2.39:1 Anamorphic Overlay -->
+      <div id="cinema-letterbox" class="cinema-letterbox-container" aria-hidden="true">
+        <div class="cinema-letterbox-bar cinema-bar-top">
+          <div class="cinema-telemetry-left">
+            <span class="cinema-rec-dot">● REC</span>
+            <span class="cinema-tag">ARES-01 // MARTIAN RECON DRONE</span>
+            <span id="cinema-cam-shot" class="cinema-shot-name">OVERVIEW TOUR</span>
+          </div>
+          <div class="cinema-telemetry-right">
+            <span id="cinema-sol-text">SOL 003</span>
+            <span class="cinema-sep">|</span>
+            <span id="cinema-time-text">08:30 LOCAL</span>
+            <span class="cinema-sep">|</span>
+            <span>LAT 18.38°N  LON 77.58°E</span>
+          </div>
+        </div>
+        <div class="cinema-letterbox-bar cinema-bar-bottom">
+          <div class="cinema-bottom-controls">
+            <button id="btn-cinema-tour-toggle" class="cinema-ctrl-btn">
+              <span class="cinema-icon">✈</span>
+              <span id="cinema-tour-btn-label">START TOUR [T]</span>
+            </button>
+            <button id="btn-cinema-reset-cam" class="cinema-ctrl-btn">
+              <span class="cinema-icon">⟲</span>
+              <span>RESET VIEW [SPACE]</span>
+            </button>
+            <button id="btn-cinema-exit" class="cinema-ctrl-btn cinema-exit-btn">
+              <span>✕ EXIT CINEMA [C / ESC]</span>
+            </button>
+          </div>
+          <div class="cinema-hint">
+            <span>DRAG TO ORBIT • WHEEL TO DOLLY • WASD TO FLY • [T] FOR TOUR</span>
+          </div>
+        </div>
+      </div>
 
       <!-- Persistent Calm Event Alert Dock (Upper Center/Right) -->
       <div id="hud-event-dock" class="hud-event-dock" aria-live="polite"></div>
@@ -544,6 +594,13 @@ export class InfoOverlay {
             <span>CAMERA</span>
             <span>ORBIT</span>
           </div>
+
+          <button id="btn-cinema-cam-mode" class="left-nav-btn ares-glass-pill cinema-cam-btn" title="Toggle Cinematic Perspective Mode (Hotkey: C)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+              <path d="M15 10l5-3v10l-5-3v-4z"/>
+              <rect x="2" y="6" width="13" height="12" rx="2"/>
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -593,6 +650,19 @@ export class InfoOverlay {
       cameraCompass: document.getElementById('btn-camera-compass'),
       compassNeedleGroup: document.getElementById('compass-needle-group'),
       cameraOrbitBtn: document.getElementById('btn-camera-orbit'),
+
+      // Cinema Mode Elements
+      toggleCinemaHudBtn: document.getElementById('btn-toggle-cinema-hud'),
+      cinemaCamModeBtn: document.getElementById('btn-cinema-cam-mode'),
+      cinemaLetterbox: document.getElementById('cinema-letterbox'),
+      cinemaTourToggleBtn: document.getElementById('btn-cinema-tour-toggle'),
+      cinemaTourBtnLabel: document.getElementById('cinema-tour-btn-label'),
+      cinemaResetCamBtn: document.getElementById('btn-cinema-reset-cam'),
+      cinemaExitBtn: document.getElementById('btn-cinema-exit'),
+      cinemaSolText: document.getElementById('cinema-sol-text'),
+      cinemaTimeText: document.getElementById('cinema-time-text'),
+      cinemaCamShot: document.getElementById('cinema-cam-shot'),
+      cinemaStatusLabel: document.getElementById('hud-cinema-status-label'),
 
       // Bottom-Right Floating Control
       btnResourceManager: document.getElementById('btn-resource-manager'),
@@ -1003,6 +1073,64 @@ export class InfoOverlay {
         });
       }
     });
+
+    // Cinema Mode Controls
+    const handleCinemaToggle = (e) => {
+      if (e) e.stopPropagation();
+      this.toggleCinemaMode();
+    };
+
+    if (this.dom.toggleCinemaHudBtn) {
+      this.dom.toggleCinemaHudBtn.addEventListener('click', handleCinemaToggle);
+    }
+    if (this.dom.cinemaCamModeBtn) {
+      this.dom.cinemaCamModeBtn.addEventListener('click', handleCinemaToggle);
+    }
+    if (this.dom.cinemaExitBtn) {
+      this.dom.cinemaExitBtn.addEventListener('click', handleCinemaToggle);
+    }
+
+    if (this.dom.cinemaTourToggleBtn) {
+      this.dom.cinemaTourToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleCinemaTour();
+      });
+    }
+
+    if (this.dom.cinemaResetCamBtn) {
+      this.dom.cinemaResetCamBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.cameraController) {
+          this.cameraController.resetView();
+        }
+      });
+    }
+  }
+
+  toggleCinemaMode() {
+    if (!this.cameraController) return;
+    const newMode = this.cameraController.toggleMode();
+    const isCinema = newMode === 'cinematic';
+
+    document.body.classList.toggle('cinema-active', isCinema);
+
+    if (this.dom.cinemaStatusLabel) {
+      this.dom.cinemaStatusLabel.textContent = isCinema ? 'TACTICAL' : 'CINEMA';
+    }
+    if (this.dom.toggleCinemaHudBtn) {
+      this.dom.toggleCinemaHudBtn.classList.toggle('active', isCinema);
+    }
+    if (this.dom.cinemaCamModeBtn) {
+      this.dom.cinemaCamModeBtn.classList.toggle('active', isCinema);
+    }
+  }
+
+  toggleCinemaTour() {
+    if (!this.cameraController) return;
+    const isTouring = this.cameraController.toggleTour();
+    if (this.dom.cinemaTourBtnLabel) {
+      this.dom.cinemaTourBtnLabel.textContent = isTouring ? 'PAUSE TOUR [T]' : 'START TOUR [T]';
+    }
   }
 
   /**
@@ -1036,6 +1164,27 @@ export class InfoOverlay {
     }
     if (this.dom.timeText && this.dom.timeText.textContent !== snapshot.timeString) {
       this.dom.timeText.textContent = snapshot.timeString;
+    }
+
+    // Update Cinema Viewfinder Telemetry
+    if (this.dom.cinemaSolText && this.dom.cinemaSolText.textContent !== snapshot.solString) {
+      this.dom.cinemaSolText.textContent = snapshot.solString;
+    }
+    if (this.dom.cinemaTimeText && this.dom.cinemaTimeText.textContent !== `${snapshot.timeString} LOCAL`) {
+      this.dom.cinemaTimeText.textContent = `${snapshot.timeString} LOCAL`;
+    }
+    if (this.dom.cinemaCamShot && this.cameraController) {
+      if (this.cameraController.isTouring && this.cameraController.tourShots) {
+        const activeShot = this.cameraController.tourShots[this.cameraController.tourShotIndex];
+        if (activeShot && this.dom.cinemaCamShot.textContent !== activeShot.name) {
+          this.dom.cinemaCamShot.textContent = activeShot.name;
+        }
+      } else {
+        const modeLabel = this.cameraController.mode === 'cinematic' ? 'ORBIT CAM' : 'TACTICAL 2.5D';
+        if (this.dom.cinemaCamShot.textContent !== modeLabel) {
+          this.dom.cinemaCamShot.textContent = modeLabel;
+        }
+      }
     }
 
     // Play/Pause button state (guarded to avoid re-parsing SVG HTML on every tick)

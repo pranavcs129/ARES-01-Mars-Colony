@@ -2901,3 +2901,213 @@ html, body {
   margin-top: 6px;
   text-transform: uppercase;
 }
+
+/* ─────────────────────────────────────────────────────────
+   CINEMASCOPE 2.39:1 ANAMORPHIC LETTERBOX & VIEWFINDER
+   ───────────────────────────────────────────────────────── */
+.cinema-letterbox-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.5s ease;
+}
+
+body.cinema-active .cinema-letterbox-container {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Widescreen anamorphic top and bottom bars */
+.cinema-letterbox-bar {
+  width: 100%;
+  background: #000000;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  box-sizing: border-box;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: #a8a29e;
+  user-select: none;
+  transition: height 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cinema-bar-top {
+  height: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cinema-bar-bottom {
+  height: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+
+body.cinema-active .cinema-bar-top {
+  height: clamp(48px, 7.5vh, 72px);
+  pointer-events: auto;
+}
+
+body.cinema-active .cinema-bar-bottom {
+  height: clamp(64px, 9.5vh, 88px);
+  pointer-events: auto;
+}
+
+/* Cinema Vignette Overlay on 3D canvas */
+body.cinema-active #app::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, transparent 50%, rgba(0, 0, 0, 0.48) 100%);
+  z-index: 2;
+}
+
+/* Hide dense HUD panels during Cinema Mode */
+body.cinema-active .mission-hud-bar,
+body.cinema-active .left-bottom-controls,
+body.cinema-active #btn-resource-manager,
+body.cinema-active .facility-profile-panel,
+body.cinema-active .colony-monitor-drawer,
+body.cinema-active .hud-event-dock,
+body.cinema-active .hover-tooltip {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateY(-14px) !important;
+  transition: opacity 0.4s ease, transform 0.4s ease !important;
+}
+
+.cinema-telemetry-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.cinema-rec-dot {
+  color: #ef4444;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  animation: cinemaBlink 1.2s infinite ease-in-out;
+}
+
+@keyframes cinemaBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+.cinema-tag {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.cinema-shot-name {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 3px 10px;
+  border-radius: 4px;
+}
+
+.cinema-telemetry-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #78716c;
+}
+
+.cinema-sep {
+  opacity: 0.35;
+}
+
+.cinema-bottom-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.cinema-ctrl-btn {
+  background: rgba(30, 25, 24, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #f3f4f6;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+}
+
+.cinema-ctrl-btn:hover {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: #f59e0b;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.cinema-exit-btn {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.cinema-exit-btn:hover {
+  background: rgba(239, 68, 68, 0.35);
+  border-color: #ef4444;
+  color: #ffffff;
+}
+
+.cinema-hint {
+  font-size: 10px;
+  color: #78716c;
+  letter-spacing: 0.12em;
+  text-align: center;
+}
+
+/* Top HUD Cinema Capsule */
+.hud-cinema-capsule {
+  cursor: pointer;
+  border-color: rgba(245, 158, 11, 0.35);
+  transition: all 0.25s ease;
+}
+
+.hud-cinema-capsule:hover {
+  border-color: rgba(245, 158, 11, 0.7);
+  background: rgba(245, 158, 11, 0.14);
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
+}
+
+.hud-cinema-icon {
+  color: #f59e0b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cinema-cam-btn {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.cinema-cam-btn:hover {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: #f59e0b;
+}
+

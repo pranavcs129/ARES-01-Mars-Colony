@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { PostProcessingPipeline } from './PostProcessingPipeline.js';
 
 export class SceneManager {
   constructor(containerElement) {
@@ -7,6 +8,7 @@ export class SceneManager {
     this.renderer = null;
     this.camera = null;
     this.cameraController = null;
+    this.postProcessing = null;
     this.clock = new THREE.Clock();
     this.updatables = [];
     this.isRunning = false;
@@ -15,39 +17,34 @@ export class SceneManager {
   }
 
   init() {
-    // 1. Scene setup with warm dusty Mars atmospheric backdrop
+    // 1. Scene setup with rich Martian atmosphere
     this.scene = new THREE.Scene();
-    const bgColor = new THREE.Color(0x1a0d09);
-    this.scene.background = bgColor;
-    this.scene.fog = new THREE.FogExp2(0x1a0d09, 0.003);
+    // Use transparent/null background to allow the dynamic MarsSky skydome to render
+    this.scene.background = null;
 
-    // 2. WebGL Renderer — resilient initialization with fallbacks
+    // Atmospheric depth fog (warm Martian copper haze)
+    this.defaultFogColor = new THREE.Color(0x943d1a);
+    this.stormFogColor = new THREE.Color(0xb84218);
+    this.scene.fog = new THREE.FogExp2(0x943d1a, 0.0022);
+
+    // 2. WebGL Renderer
     const width = this.container.clientWidth || window.innerWidth || 800;
     const height = this.container.clientHeight || window.innerHeight || 600;
 
     this.renderer = this.createRenderer(width, height);
-
-    // PERF: cap pixel ratio to 1.0 max.
-    // Eliminates over 55% of GPU fragment shading and bandwidth costs on Retina displays,
-    // maintaining smooth 60 FPS on laptops and integrated GPUs.
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.0));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
     this.renderer.setSize(width, height);
 
-    // PERF: static shadow map optimization.
-    // Colony buildings and directional sun are stationary. autoUpdate = false saves ~150
-    // redundant shadow-pass draw calls every single frame. We trigger needsUpdate on load,
-    // on resize, and throttled to once every 2.0s for ambient solar oscillation.
+    // High quality soft shadows
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFShadowMap;
-    this.renderer.shadowMap.autoUpdate = false;
-    this.renderer.shadowMap.needsUpdate = true;
-    this._shadowTimer = 0;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.autoUpdate = true; // Smooth real-time soft shadows
 
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.18;
+    this.renderer.toneMappingExposure = 1.22;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-    // Clear any previous canvas before appending
+    // Clear previous canvas
     while (this.container.firstChild) {
       this.container.removeChild(this.container.firstChild);
     }
@@ -63,9 +60,9 @@ export class SceneManager {
 
   createRenderer(width, height) {
     const attempts = [
-      { antialias: false, powerPreference: 'default', depth: true, stencil: false },
-      { antialias: false, powerPreference: 'high-performance', depth: true },
-      { antialias: false, powerPreference: 'low-power', depth: true, failIfMajorPerformanceCaveat: false },
+      { antialias: true, powerPreference: 'high-performance', depth: true, stencil: false },
+      { antialias: true, powerPreference: 'default', depth: true },
+      { antialias: false, powerPreference: 'default', depth: true },
       { antialias: false, failIfMajorPerformanceCaveat: false }
     ];
 
@@ -76,7 +73,7 @@ export class SceneManager {
         return renderer;
       } catch (err) {
         lastError = err;
-        console.warn(`[SceneManager] WebGL attempt ${i + 1} (${JSON.stringify(attempts[i])}) failed:`, err.message);
+        console.warn(`[SceneManager] WebGL attempt ${i + 1} failed:`, err.message);
       }
     }
 
@@ -102,8 +99,15 @@ export class SceneManager {
   setCamera(camera, cameraController = null) {
     this.camera = camera;
     this.cameraController = cameraController;
+
     if (this.cameraController && !this.updatables.includes(this.cameraController)) {
       this.updatables.push(this.cameraController);
+    }
+
+    if (!this.postProcessing) {
+      this.postProcessing = new PostProcessingPipeline(this.renderer, this.scene, this.camera, this.container);
+    } else {
+      this.postProcessing.setCamera(this.camera);
     }
   }
 
@@ -121,6 +125,16 @@ export class SceneManager {
     if (this.renderer && this.renderer.shadowMap && this.renderer.shadowMap.enabled) {
       this.renderer.shadowMap.needsUpdate = true;
     }
+  }
+
+  /**
+   * Sets atmospheric fog density and color for dust storms
+   */
+  setDustStormIntensity(intensity = 0.0) {
+    if (!this.scene.fog) return;
+    const clamped = Math.max(0.0, Math.min(1.0, intensity));
+    this.scene.fog.density = 0.0022 + clamped * 0.009;
+    this.scene.fog.color.lerpColors(this.defaultFogColor, this.stormFogColor, clamped);
   }
 
   onWindowResize() {
@@ -143,6 +157,9 @@ export class SceneManager {
     }
 
     this.renderer.setSize(width, height);
+    if (this.postProcessing) {
+      this.postProcessing.setSize(width, height);
+    }
     this.requestShadowUpdate();
   }
 
@@ -157,18 +174,21 @@ export class SceneManager {
 
       const delta = Math.min(this.clock.getDelta(), 0.1);
 
+      // Check active camera from cameraController if dual-camera is active
+      if (this.cameraController && this.cameraController.camera && this.cameraController.camera !== this.camera) {
+        this.camera = this.cameraController.camera;
+        if (this.postProcessing) {
+          this.postProcessing.setCamera(this.camera);
+        }
+      }
+
       for (let i = 0; i < this.updatables.length; i++) {
         this.updatables[i].update(delta);
       }
 
-      // Throttled shadow update (0.5 Hz) for subtle ambient solar angle changes
-      this._shadowTimer += delta;
-      if (this._shadowTimer >= 2.0) {
-        this._shadowTimer = 0;
-        this.requestShadowUpdate();
-      }
-
-      if (this.camera && this.renderer) {
+      if (this.postProcessing && this.postProcessing.enabled) {
+        this.postProcessing.render();
+      } else if (this.camera && this.renderer) {
         this.renderer.render(this.scene, this.camera);
       }
     };

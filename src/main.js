@@ -1,6 +1,9 @@
 import { SceneManager } from './core/SceneManager.js';
-import { CameraController } from './core/CameraController.js';
+import { CinematicCameraController } from './core/CinematicCameraController.js';
 import { Lighting } from './environment/Lighting.js';
+import { MarsSky } from './environment/MarsSky.js';
+import { MarsDustAtmosphere } from './environment/MarsDustAtmosphere.js';
+import { ColonyLifeManager } from './environment/ColonyLifeManager.js';
 import { ColonyLoader } from './loaders/ColonyLoader.js';
 import { ColonyAnimator } from './environment/ColonyAnimator.js';
 import { InfoOverlay } from './ui/InfoOverlay.js';
@@ -8,7 +11,7 @@ import { InteractionManager } from './interaction/InteractionManager.js';
 import { SimulationManager } from './simulation/SimulationManager.js';
 
 async function bootstrap() {
-  console.log('🚀 Initializing Ares-1 Mars Colony Simulation...');
+  console.log('🚀 Initializing Ares-1 Mars Colony Simulation [Cinematic Edition]...');
 
   const appContainer = document.getElementById('app');
   const overlayContainer = document.getElementById('overlay');
@@ -19,7 +22,6 @@ async function bootstrap() {
   }
 
   // 1. Initialize UI Overlay and Simulation Engine FIRST
-  // This guarantees the HUD and Loading Screen are mounted instantly — zero blank screens!
   const overlay = new InfoOverlay(overlayContainer, null);
   const simulationManager = new SimulationManager();
   overlay.setSimulationManager(simulationManager);
@@ -48,16 +50,41 @@ async function bootstrap() {
   }
 
   try {
-    // 2. Initialize Scene & Renderer
+    // 2. Initialize Scene & Renderer with Post-Processing & Soft Shadows
     const sceneManager = new SceneManager(appContainer);
 
-    // 3. Isometric 2.5D Camera Controller (framed around the GLB colony)
-    const cameraController = new CameraController(appContainer);
+    // 3. Cinematic & Tactical Dual-Mode Camera Controller
+    const cameraController = new CinematicCameraController(appContainer);
     sceneManager.setCamera(cameraController.camera, cameraController);
     overlay.setCameraController(cameraController);
 
-    // 4. Warm Mars Lighting Setup
-    new Lighting(sceneManager.scene);
+    // 4. Dynamic Martian Lighting & Atmospheric Environment
+    const lighting = new Lighting(sceneManager.scene);
+    const sky = new MarsSky(sceneManager.scene);
+    const dust = new MarsDustAtmosphere(sceneManager.scene);
+
+    // Dynamic environmental updater tied to the Sol clock & weather events
+    let lifeManager = null;
+    const environmentSync = {
+      update: (delta) => {
+        const hour = simulationManager ? simulationManager.hour : 12.0;
+        const isDustStorm = simulationManager
+          ? simulationManager.eventManager.activeEvents.some(e => e.type === 'DUST_STORM')
+          : false;
+
+        sky.update(hour, delta, isDustStorm);
+        lighting.update(hour, delta, isDustStorm);
+        dust.update(delta, isDustStorm, lighting.dirLight.position.clone().normalize());
+
+        if (lifeManager) {
+          const isNight = hour < 5.8 || hour > 19.5;
+          lifeManager.update(delta, isNight, isDustStorm);
+        }
+
+        sceneManager.setDustStormIntensity(isDustStorm ? 1.0 : 0.0);
+      }
+    };
+    sceneManager.registerUpdatable(environmentSync);
 
     // Register simulation manager with 3D render loop
     sceneManager.registerUpdatable(simulationManager);
@@ -79,13 +106,15 @@ async function bootstrap() {
     overlay.onLoadComplete();
     console.log('✅ Mars Colony Model mounted & aligned successfully.');
 
-    // 7. Initialize ambient colony animations
+    // 7. Initialize Kinetic Colony Life (autonomous rovers, survey drones, beacon strobes)
+    lifeManager = new ColonyLifeManager(sceneManager.scene, result.colony);
+
+    // 8. Initialize ambient colony animations (solar panel tracking, emissive pulses)
     const animator = new ColonyAnimator(sceneManager.scene, result.colony);
     sceneManager.registerUpdatable(animator);
     console.log('🌬️ Colony ambient animations active.');
 
-    // 8. Initialize interactive structure selection
-    // Enables hover highlight, click focus, telemetry info panel, and deselect.
+    // 9. Initialize interactive structure selection
     const interactionManager = new InteractionManager(
       sceneManager.scene,
       cameraController,
