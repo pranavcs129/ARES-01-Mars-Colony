@@ -66,11 +66,11 @@ async function bootstrap() {
     sceneManager.start();
     console.log('✨ 3D Mars Scene rendering active.');
 
-    // 6. Stream Colony GLB Model (defaults to /assets/mars_colony_base.glb with automatic fallback)
+    // 6. Stream Colony GLB Model
     const colonyLoader = new ColonyLoader(sceneManager.scene);
 
     const result = await colonyLoader.load(
-      '/assets/mars_colony_base.glb',
+      '/assets/mars_colony_full_detail_v10_enhanced.glb',
       (percent) => {
         overlay.updateProgress(percent);
       }

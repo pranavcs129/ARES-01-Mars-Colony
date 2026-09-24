@@ -9,10 +9,9 @@ export class ColonyLoader {
     this.inspectionData = null;
   }
 
-  async load(primaryUrl = '/assets/mars_colony_base.glb', onProgress = null) {
+  async load(primaryUrl = '/assets/mars_colony_full_detail_v10_enhanced.glb', onProgress = null) {
     const fallbackUrls = [
       primaryUrl,
-      '/assets/mars_colony_base.glb',
       '/assets/mars_colony_full_detail_v10_enhanced.glb'
     ].filter((u, i, arr) => arr.indexOf(u) === i);
 
