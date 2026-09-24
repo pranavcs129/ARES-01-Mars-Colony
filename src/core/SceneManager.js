@@ -21,18 +21,13 @@ export class SceneManager {
     this.scene.background = bgColor;
     this.scene.fog = new THREE.FogExp2(0x1a0d09, 0.003);
 
-    // 2. WebGL Renderer — optimized for laptop performance
+    // 2. WebGL Renderer — resilient initialization with fallbacks
     const width = this.container.clientWidth || window.innerWidth || 800;
     const height = this.container.clientHeight || window.innerHeight || 600;
 
-    this.renderer = new THREE.WebGLRenderer({
-      antialias: false,           // PERF: disable AA — saves significant fill cost
-      powerPreference: 'high-performance',
-      stencil: false,
-      depth: true
-    });
+    this.renderer = this.createRenderer(width, height);
 
-    // PERF: cap pixel ratio to 1.0 max (was 1.5).
+    // PERF: cap pixel ratio to 1.0 max.
     // Eliminates over 55% of GPU fragment shading and bandwidth costs on Retina displays,
     // maintaining smooth 60 FPS on laptops and integrated GPUs.
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.0));
@@ -64,6 +59,44 @@ export class SceneManager {
       if (this._resizeTimeout) clearTimeout(this._resizeTimeout);
       this._resizeTimeout = setTimeout(() => this.onWindowResize(), 100);
     });
+  }
+
+  createRenderer(width, height) {
+    const attempts = [
+      { antialias: false, powerPreference: 'default', depth: true, stencil: false },
+      { antialias: false, powerPreference: 'high-performance', depth: true },
+      { antialias: false, powerPreference: 'low-power', depth: true, failIfMajorPerformanceCaveat: false },
+      { antialias: false, failIfMajorPerformanceCaveat: false }
+    ];
+
+    let lastError = null;
+    for (let i = 0; i < attempts.length; i++) {
+      try {
+        const renderer = new THREE.WebGLRenderer(attempts[i]);
+        return renderer;
+      } catch (err) {
+        lastError = err;
+        console.warn(`[SceneManager] WebGL attempt ${i + 1} (${JSON.stringify(attempts[i])}) failed:`, err.message);
+      }
+    }
+
+    throw new Error(
+      lastError
+        ? `WebGL context creation failed: ${lastError.message}`
+        : 'WebGL is disabled or unsupported in this browser.'
+    );
+  }
+
+  static isWebGLAvailable() {
+    try {
+      const canvas = document.createElement('canvas');
+      return !!(
+        window.WebGLRenderingContext &&
+        (canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl'))
+      );
+    } catch {
+      return false;
+    }
   }
 
   setCamera(camera, cameraController = null) {

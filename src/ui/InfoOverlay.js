@@ -28,6 +28,10 @@ export class InfoOverlay {
     this.startCompassTracker();
   }
 
+  setCameraController(cameraController) {
+    this.cameraController = cameraController;
+  }
+
   setInteractionManager(interactionManager) {
     this.interactionManager = interactionManager;
   }
@@ -1853,11 +1857,88 @@ export class InfoOverlay {
     }, remainingHold);
   }
 
-  onLoadError(errorMsg) {
+  onLoadError(errorMsg, options = {}) {
+    const isWebGL = errorMsg && (errorMsg.includes('WebGL') || errorMsg.includes('context'));
     const pct = document.getElementById('loading-pct-val');
     if (pct) {
-      pct.textContent = `INITIALIZATION FAILED: ${errorMsg}`;
+      pct.textContent = isWebGL ? 'GRAPHICS ACCELERATION UNAVAILABLE' : `SYSTEM ALERT: ${errorMsg}`;
       pct.style.color = '#ef4444';
+    }
+
+    const content = document.querySelector('.loading-content');
+    if (content && !document.getElementById('loading-error-card')) {
+      const card = document.createElement('div');
+      card.id = 'loading-error-card';
+      card.className = 'loading-error-card';
+      card.innerHTML = `
+        <div class="error-card-inner">
+          <div class="error-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            ${isWebGL ? 'GRAPHICS SYSTEM NOTICE' : 'TELEMETRY CONNECTION ERROR'}
+          </div>
+          <p class="error-desc">
+            ${isWebGL
+              ? 'Martian 3D visualizer requires WebGL hardware acceleration. If disabled, enable "Use graphics acceleration when available" in your browser settings (chrome://settings/system).'
+              : errorMsg}
+          </p>
+          <div class="error-action-row">
+            <button id="btn-enter-telemetry" class="error-action-btn primary-btn">
+              ⚡ ENTER 2D TELEMETRY &amp; COMMAND MODE
+            </button>
+            <button id="btn-reload-mission" class="error-action-btn secondary-btn">
+              🔄 RETRY CONNECTION
+            </button>
+          </div>
+        </div>
+      `;
+
+      content.appendChild(card);
+
+      const telemetryBtn = document.getElementById('btn-enter-telemetry');
+      if (telemetryBtn) {
+        telemetryBtn.addEventListener('click', () => {
+          this.enterTelemetryMode();
+          if (options.onCommandMode) options.onCommandMode();
+        });
+      }
+
+      const reloadBtn = document.getElementById('btn-reload-mission');
+      if (reloadBtn) {
+        reloadBtn.addEventListener('click', () => {
+          window.location.reload();
+        });
+      }
+    }
+  }
+
+  enterTelemetryMode() {
+    this.isLoadingComplete = true;
+    if (this.loadingAnimRaf) {
+      cancelAnimationFrame(this.loadingAnimRaf);
+      this.loadingAnimRaf = null;
+    }
+    const overlay = document.getElementById('colony-loading-overlay');
+    if (overlay) {
+      overlay.classList.add('fade-out');
+      setTimeout(() => {
+        overlay.style.display = 'none';
+      }, 350);
+    }
+    const app = document.getElementById('app');
+    if (app && (!app.children.length || !app.querySelector('canvas'))) {
+      app.innerHTML = `
+        <div class="telemetry-fallback-backdrop">
+          <div class="telemetry-grid-overlay"></div>
+          <div class="telemetry-orbital-banner">
+            <div class="orbital-tag">ARES-01 • ORBITAL SATELLITE TELEMETRY MODE</div>
+            <div class="orbital-sub">LIVE MARTIAN SURFACE SIMULATION ACTIVE</div>
+          </div>
+        </div>
+      `;
     }
   }
 }

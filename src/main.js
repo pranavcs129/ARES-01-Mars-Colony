@@ -18,55 +18,73 @@ async function bootstrap() {
     return;
   }
 
-  let overlay = null;
+  // 1. Initialize UI Overlay and Simulation Engine FIRST
+  // This guarantees the HUD and Loading Screen are mounted instantly — zero blank screens!
+  const overlay = new InfoOverlay(overlayContainer, null);
+  const simulationManager = new SimulationManager();
+  overlay.setSimulationManager(simulationManager);
+  console.log('🪐 Colony Sol Simulation Manager active.');
+
+  // Helper for 2D Command Mode simulation loop
+  const startHeadlessLoop = () => {
+    let lastTime = performance.now();
+    const loop = (now) => {
+      const delta = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
+      simulationManager.update(delta);
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+  };
+
+  // Check WebGL availability before attempting Three.js initialization
+  if (!SceneManager.isWebGLAvailable()) {
+    console.warn('⚠️ WebGL is not available. Presenting 2D Telemetry & Command Mode.');
+    startHeadlessLoop();
+    overlay.onLoadError('WebGL context is not supported or graphics acceleration is disabled.', {
+      onCommandMode: startHeadlessLoop
+    });
+    return;
+  }
 
   try {
-    // 1. Initialize Scene & Renderer
+    // 2. Initialize Scene & Renderer
     const sceneManager = new SceneManager(appContainer);
 
-    // 2. Isometric 2.5D Camera Controller (framed around the GLB colony)
+    // 3. Isometric 2.5D Camera Controller (framed around the GLB colony)
     const cameraController = new CameraController(appContainer);
     sceneManager.setCamera(cameraController.camera, cameraController);
+    overlay.setCameraController(cameraController);
 
-    // 3. Warm Mars Lighting Setup
+    // 4. Warm Mars Lighting Setup
     new Lighting(sceneManager.scene);
 
-    // 4. Minimal Clean Header & Overlay
-    overlay = new InfoOverlay(overlayContainer, cameraController);
-
-    // 5. Initialize Sol Colony Simulation Engine
-    const simulationManager = new SimulationManager();
+    // Register simulation manager with 3D render loop
     sceneManager.registerUpdatable(simulationManager);
-    overlay.setSimulationManager(simulationManager);
-    console.log('🪐 Colony Sol Simulation Manager active.');
 
-    // 6. Start rendering loop
+    // 5. Start rendering loop
     sceneManager.start();
     console.log('✨ 3D Mars Scene rendering active.');
 
-    // 7. Stream Complete Colony GLB Model
+    // 6. Stream Colony GLB Model (defaults to /assets/mars_colony_base.glb with automatic fallback)
     const colonyLoader = new ColonyLoader(sceneManager.scene);
 
     const result = await colonyLoader.load(
-      '/assets/mars_colony_full_detail_v10_enhanced.glb',
+      '/assets/mars_colony_base.glb',
       (percent) => {
-        if (overlay) {
-          overlay.updateProgress(percent);
-        }
+        overlay.updateProgress(percent);
       }
     );
 
-    if (overlay) {
-      overlay.onLoadComplete();
-    }
+    overlay.onLoadComplete();
     console.log('✅ Mars Colony Model mounted & aligned successfully.');
 
-    // 8. Initialize ambient colony animations
+    // 7. Initialize ambient colony animations
     const animator = new ColonyAnimator(sceneManager.scene, result.colony);
     sceneManager.registerUpdatable(animator);
     console.log('🌬️ Colony ambient animations active.');
 
-    // 9. Initialize interactive structure selection
+    // 8. Initialize interactive structure selection
     // Enables hover highlight, click focus, telemetry info panel, and deselect.
     const interactionManager = new InteractionManager(
       sceneManager.scene,
@@ -94,9 +112,9 @@ async function bootstrap() {
 
   } catch (err) {
     console.error('Fatal initialization error:', err);
-    if (overlay) {
-      overlay.onLoadError(err.message);
-    }
+    overlay.onLoadError(err.message, {
+      onCommandMode: startHeadlessLoop
+    });
   }
 }
 

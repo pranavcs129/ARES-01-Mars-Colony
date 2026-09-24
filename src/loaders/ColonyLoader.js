@@ -9,8 +9,35 @@ export class ColonyLoader {
     this.inspectionData = null;
   }
 
-  async load(url = '/assets/mars_colony_full_detail_v10_enhanced.glb', onProgress = null) {
+  async load(primaryUrl = '/assets/mars_colony_base.glb', onProgress = null) {
+    const fallbackUrls = [
+      primaryUrl,
+      '/assets/mars_colony_base.glb',
+      '/assets/mars_colony_full_detail_v10_enhanced.glb'
+    ].filter((u, i, arr) => arr.indexOf(u) === i);
+
+    let lastError = null;
+
+    for (let i = 0; i < fallbackUrls.length; i++) {
+      const url = fallbackUrls[i];
+      try {
+        console.log(`[ColonyLoader] Attempting to load colony GLB (${i + 1}/${fallbackUrls.length}): ${url}`);
+        const result = await this._loadSingleUrl(url, onProgress);
+        return result;
+      } catch (err) {
+        lastError = err;
+        console.warn(`[ColonyLoader] Failed loading ${url}:`, err.message);
+      }
+    }
+
+    throw new Error(`All GLB model loading attempts failed. Last error: ${lastError?.message || 'Unknown'}`);
+  }
+
+  _loadSingleUrl(url, onProgress) {
     return new Promise((resolve, reject) => {
+      // Approximate expected bytes if xhr.total is 0 or header missing
+      const expectedBytes = url.includes('enhanced') ? 103746676 : 12763712;
+
       this.loader.load(
         url,
         (gltf) => {
@@ -101,7 +128,7 @@ export class ColonyLoader {
           });
 
           this.inspectionData = {
-            modelName: 'mars_colony_full_detail_v10_enhanced.glb',
+            modelName: url.split('/').pop(),
             finalDimensions: {
               width: Number(finalSize.x.toFixed(2)),
               height: Number(finalSize.y.toFixed(2)),
@@ -120,7 +147,7 @@ export class ColonyLoader {
           };
 
           console.log('%c🚀 Colony loaded', 'color: #f59e0b; font-weight: bold;',
-            `${meshList.length} meshes, ${materialSet.size} mats, ${totalTriangles.toLocaleString()} tris`);
+            `${meshList.length} meshes, ${materialSet.size} mats, ${totalTriangles.toLocaleString()} tris (${url})`);
 
           this.scene.add(this.colony);
 
@@ -131,7 +158,7 @@ export class ColonyLoader {
         },
         (xhr) => {
           if (onProgress) {
-            const total = xhr.total > 0 ? xhr.total : 103746676;
+            const total = xhr.total > 0 ? xhr.total : expectedBytes;
             const percent = Math.min(100, (xhr.loaded / total) * 100);
             onProgress(percent);
           }

@@ -2769,3 +2769,135 @@ html, body {
     height: 44px;
   }
 }
+
+/* ─── SYSTEM INITIALIZATION & ERROR RECOVERY UI ─── */
+.loading-error-card {
+  margin-top: 20px;
+  width: 100%;
+  max-width: 440px;
+  background: rgba(18, 12, 10, 0.92);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65), 0 0 24px rgba(239, 68, 68, 0.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  animation: fadeIn 0.3s ease-out;
+  box-sizing: border-box;
+}
+
+.error-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #f87171;
+  margin-bottom: 8px;
+}
+
+.error-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #d1d5db;
+  margin: 0 0 16px 0;
+}
+
+.error-action-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.error-action-btn {
+  width: 100%;
+  padding: 10px 14px;
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.error-action-btn.primary-btn {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+  color: #ffffff;
+  border: 1px solid rgba(251, 146, 60, 0.5);
+  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.35);
+}
+
+.error-action-btn.primary-btn:hover {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(234, 88, 12, 0.5);
+}
+
+.error-action-btn.secondary-btn {
+  background: rgba(255, 255, 255, 0.06);
+  color: #9ca3af;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.error-action-btn.secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f3f4f6;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* ─── 2D TELEMETRY SATELLITE FALLBACK BACKDROP ─── */
+.telemetry-fallback-backdrop {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 40%, #2a110a 0%, #150906 60%, #0a0403 100%);
+  overflow: hidden;
+  z-index: 1;
+}
+
+.telemetry-grid-overlay {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(249, 115, 22, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(249, 115, 22, 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+}
+
+.telemetry-orbital-banner {
+  position: absolute;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.orbital-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #fb923c;
+  background: rgba(234, 88, 12, 0.15);
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  padding: 5px 14px;
+  border-radius: 9999px;
+  display: inline-block;
+  backdrop-filter: blur(8px);
+}
+
+.orbital-sub {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #78716c;
+  margin-top: 6px;
+  text-transform: uppercase;
+}
