@@ -48,12 +48,12 @@ export class PostProcessingPipeline {
       this.composer.addPass(this.renderPass);
 
       // 2. Restrained Bloom Pass
-      // Very high threshold (0.92) & low strength (0.18) so terrain and normal structures NEVER glow
+      // Very high threshold (0.95) & low strength (0.12) so terrain and normal structures NEVER glow
       this.bloomPass = new UnrealBloomPass(
         new THREE.Vector2(width * 0.5, height * 0.5),
-        0.18, // Restrained bloom strength
-        0.22, // Tight bloom radius
-        0.92  // High threshold (only hot emissives glow)
+        0.12, // Minimal, realistic bloom strength
+        0.15, // Tight bloom radius
+        0.95  // Ultra-high threshold (only genuinely bright light sources bloom)
       );
       this.composer.addPass(this.bloomPass);
 

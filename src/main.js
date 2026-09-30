@@ -65,10 +65,20 @@ async function bootstrap() {
 
     // Dynamic environmental updater tied to the Sol clock & weather events
     let lifeManager = null;
+    let animator = null;
     const environmentSync = {
       update: (delta) => {
         const hour = simulationManager ? simulationManager.hour : 12.0;
-        const isNight = hour < 5.8 || hour > 19.5;
+        // Continuous smooth nightFactor: 0.0 at midday, 1.0 at full night
+        let nightFactor = 0.0;
+        if (hour < 5.5 || hour > 19.5) {
+          nightFactor = 1.0;
+        } else if (hour >= 5.5 && hour < 7.0) {
+          nightFactor = 1.0 - (hour - 5.5) / 1.5;
+        } else if (hour > 17.5 && hour <= 19.5) {
+          nightFactor = (hour - 17.5) / 2.0;
+        }
+        const isNight = nightFactor > 0.45;
         const isDustStorm = simulationManager
           ? simulationManager.eventManager.activeEvents.some(e => e.type === 'DUST_STORM')
           : false;
@@ -80,8 +90,11 @@ async function bootstrap() {
         if (lifeManager) {
           lifeManager.update(delta, isNight, isDustStorm);
         }
+        if (animator) {
+          animator.nightFactor = nightFactor;
+        }
 
-        sceneManager.setDustStormIntensity(isDustStorm ? 1.0 : 0.0, isNight);
+        sceneManager.setDustStormIntensity(isDustStorm ? 1.0 : 0.0, nightFactor);
       }
     };
     sceneManager.registerUpdatable(environmentSync);
@@ -106,11 +119,11 @@ async function bootstrap() {
     overlay.onLoadComplete();
     console.log('✅ Mars Colony Model mounted & aligned successfully.');
 
-    // 7. Initialize Kinetic Colony Life (autonomous rovers, survey drones, beacon strobes)
+    // 7. Initialize Kinetic Colony Life (beacon strobes)
     lifeManager = new ColonyLifeManager(sceneManager.scene, result.colony);
 
     // 8. Initialize ambient colony animations (solar panel tracking, emissive pulses)
-    const animator = new ColonyAnimator(sceneManager.scene, result.colony);
+    animator = new ColonyAnimator(sceneManager.scene, result.colony);
     sceneManager.registerUpdatable(animator);
     console.log('🌬️ Colony ambient animations active.');
 

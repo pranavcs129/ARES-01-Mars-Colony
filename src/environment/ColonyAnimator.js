@@ -1,23 +1,12 @@
 import * as THREE from 'three';
 
 /**
- * ColonyAnimator — PERFORMANCE-OPTIMIZED version.
- * 
- * REMOVED: 16 PointLights (was the #1 performance killer — each point light
- * forces Three.js to recompile fragment shaders with NUM_POINT_LIGHTS=16,
- * making every lit fragment extremely expensive).
- * 
- * REMOVED: Dust particle system (was updating 80×3=240 floats + buffer
- * upload every frame).
- * 
- * KEPT: Emissive material pulses (zero GPU cost, just a float assignment).
- * KEPT: Solar oscillation (1 rotation assignment per frame).
- * 
- * REMOVED: Mining vibration (was setting position every frame, forcing
- * matrix recalculation on a mesh with 5028 verts).
- * 
- * All node references are cached at init time — zero scene traversal
- * during update().
+ * ColonyAnimator — Performance-Optimized Environmental & Facility Emissive Controller.
+ * Zero scene traversal during frame updates.
+ * Modulates emissive intensities on cached materials:
+ * - Daytime: subtle natural baseline
+ * - Nighttime: soft, subtle interior window & hydroponic glow (Habitat warm amber, Greenhouse soft cyan)
+ * - Zero extra lights or draw calls
  */
 export class ColonyAnimator {
   constructor(scene, colonyRoot) {
@@ -26,7 +15,7 @@ export class ColonyAnimator {
     this.elapsed = 0;
 
     // Cached animation targets (populated once at init, never traversed again)
-    this.emissivePulses = [];     // { material, baseIntensity, phase, speed, amplitude }
+    this.emissivePulses = [];     // { material, baseIntensity, phase, speed, amplitude, nightBoost }
     this.solarNode = null;
     this.solarBaseRotZ = 0;
 
@@ -36,19 +25,10 @@ export class ColonyAnimator {
   init() {
     this.setupEmissivePulses();
     this.setupSolarTracking();
-
-    console.log('%c🔧 ColonyAnimator (optimized)', 'color: #10b981; font-weight: bold;', {
-      emissivePulses: this.emissivePulses.length,
-      solarTracking: !!this.solarNode,
-      pointLights: 0,
-      dustParticles: 0
-    });
   }
 
   // ─────────────────────────────────────────────────────────
-  // EMISSIVE MATERIAL PULSES
-  // Zero GPU cost — just modifies emissiveIntensity (a uniform float).
-  // Materials are collected ONCE at init, cached in a flat array.
+  // EMISSIVE MATERIAL REGISTRATION (ONCE AT INIT)
   // ─────────────────────────────────────────────────────────
   setupEmissivePulses() {
     const seen = new Set();
@@ -64,28 +44,35 @@ export class ColonyAnimator {
 
         seen.add(mat.uuid);
 
-        const name = mat.name || '';
-        let speed = 0.3;
-        let amplitude = 0.15;
+        const name = (mat.name || '').toLowerCase();
+        let speed = 0.25;
+        let amplitude = 0.08; // Very subtle pulse (not distracting)
+        let nightBoost = 0.20;
 
-        if (name.includes('glass_teal') || name.includes('green_foliage')) {
-          speed = 0.2; amplitude = 0.2;
-        } else if (name.includes('glass_blue_light')) {
-          speed = 0.4; amplitude = 0.12;
-        } else if (name.includes('glass_blue_deep')) {
-          speed = 0.15; amplitude = 0.1;
-        } else if (name.includes('glass_dark')) {
-          speed = 0.25; amplitude = 0.18;
-        } else if (name.includes('danger_red')) {
-          speed = 0.7; amplitude = 0.25;
+        if (name.includes('glass_teal') || name.includes('green_foliage') || name.includes('greenhouse')) {
+          // Greenhouse: soft cyan/white interior growlight glow
+          speed = 0.15;
+          amplitude = 0.06;
+          nightBoost = 0.40;
+        } else if (name.includes('glass_blue_light') || name.includes('hab') || name.includes('window')) {
+          // Habitat: soft warm interior window illumination
+          speed = 0.2;
+          amplitude = 0.05;
+          nightBoost = 0.35;
+        } else if (name.includes('danger_red') || name.includes('alert')) {
+          // Critical indicator
+          speed = 0.5;
+          amplitude = 0.15;
+          nightBoost = 0.25;
         }
 
         this.emissivePulses.push({
           material: mat,
           baseIntensity: mat.emissiveIntensity || 1.0,
-          phase: i * 2.1 + seen.size * 0.7, // deterministic stagger
+          phase: i * 1.8 + seen.size * 0.6,
           speed,
-          amplitude
+          amplitude,
+          nightBoost
         });
       }
     });
@@ -95,7 +82,6 @@ export class ColonyAnimator {
   // SOLAR TRACKING — single cached node reference
   // ─────────────────────────────────────────────────────────
   setupSolarTracking() {
-    // Direct children lookup — no full traversal
     for (let i = 0; i < this.colonyRoot.children.length; i++) {
       const child = this.colonyRoot.children[i];
       if (child.name === 'solar') {
@@ -107,26 +93,26 @@ export class ColonyAnimator {
   }
 
   // ─────────────────────────────────────────────────────────
-  // UPDATE — called once per frame. Extremely lightweight.
-  // No scene traversal. No buffer uploads. No light updates.
-  // Just float assignments to cached material references.
+  // UPDATE — Called once per frame. Lightweight float assignments.
   // ─────────────────────────────────────────────────────────
-  update(delta) {
+  update(delta, nightFactor = null) {
     this.elapsed += delta;
     const t = this.elapsed;
+    const nf = nightFactor !== null ? nightFactor : (this.nightFactor || 0.0);
 
-    // Emissive pulses: ~8 float assignments total
+    // Emissive pulses: ~8 uniform float assignments total
     const pulses = this.emissivePulses;
     for (let i = 0; i < pulses.length; i++) {
       const ep = pulses[i];
-      const wave = Math.sin(t * ep.speed * 6.2832 + ep.phase); // 6.2832 = 2π
-      ep.material.emissiveIntensity = ep.baseIntensity * (1.0 + wave * ep.amplitude);
+      const wave = Math.sin(t * ep.speed * 6.2832 + ep.phase);
+      const nightGlow = nf * ep.nightBoost;
+      ep.material.emissiveIntensity = ep.baseIntensity * (1.0 + wave * ep.amplitude + nightGlow);
     }
 
-    // Solar oscillation: 1 rotation assignment
+    // Solar tracking oscillation: 1 rotation assignment
     if (this.solarNode) {
       this.solarNode.rotation.z = this.solarBaseRotZ + Math.sin(t * 0.02) * 0.12;
-      this.solarNode.updateMatrix(); // manual update since matrixAutoUpdate is false
+      this.solarNode.updateMatrix();
     }
   }
 }

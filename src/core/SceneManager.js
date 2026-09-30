@@ -23,10 +23,11 @@ export class SceneManager {
     this.scene.background = null;
 
     // Atmospheric depth fog (subtle muted copper-brown haze, very light)
-    this.defaultFogColor = new THREE.Color(0x6e4332);
-    this.nightFogColor = new THREE.Color(0x1e191b);
+    this.defaultFogColor = new THREE.Color(0x684534);
+    this.nightFogColor = new THREE.Color(0x221a24);
     this.stormFogColor = new THREE.Color(0x7c4226);
-    this.scene.fog = new THREE.FogExp2(0x6e4332, 0.0011);
+    this._currentBaseFog = new THREE.Color(0x684534);
+    this.scene.fog = new THREE.FogExp2(0x684534, 0.0008);
 
     // 2. WebGL Renderer
     const width = this.container.clientWidth || window.innerWidth || 800;
@@ -129,15 +130,21 @@ export class SceneManager {
   }
 
   /**
-   * Sets atmospheric fog density and color for dust storms
+   * Sets atmospheric fog density and color for diurnal cycle and dust storms
+   * @param {number} intensity Storm intensity (0.0 to 1.0)
+   * @param {number|boolean} isNightOrFactor Night factor (0.0=day, 1.0=night) or boolean
    */
-  setDustStormIntensity(intensity = 0.0, isNight = false) {
+  setDustStormIntensity(intensity = 0.0, isNightOrFactor = 0.0) {
     if (!this.scene.fog) return;
     const clamped = Math.max(0.0, Math.min(1.0, intensity));
-    const baseColor = isNight ? this.nightFogColor : this.defaultFogColor;
-    const baseDensity = isNight ? 0.0010 : 0.0011;
-    this.scene.fog.density = baseDensity + clamped * 0.0045;
-    this.scene.fog.color.lerpColors(baseColor, this.stormFogColor, clamped);
+    const nightT = typeof isNightOrFactor === 'number' ? isNightOrFactor : (isNightOrFactor ? 1.0 : 0.0);
+
+    if (!this._currentBaseFog) this._currentBaseFog = new THREE.Color();
+    this._currentBaseFog.lerpColors(this.defaultFogColor, this.nightFogColor, nightT);
+
+    const baseDensity = THREE.MathUtils.lerp(0.0008, 0.0005, nightT);
+    this.scene.fog.density = baseDensity + clamped * 0.0035;
+    this.scene.fog.color.lerpColors(this._currentBaseFog, this.stormFogColor, clamped);
   }
 
   onWindowResize() {

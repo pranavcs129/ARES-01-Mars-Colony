@@ -53,6 +53,7 @@ export class CinematicCameraController {
     this.cinematicElevation = 0.32; // Low dramatic angle (~18 degrees)
     this.targetCinematicElevation = 0.32;
     this.cameraSway = new THREE.Vector3();
+    this._shotCamPos = new THREE.Vector3(); // Pre-allocated vector for tour keyframes
 
     // Curated Cinematic Tour Shot Keyframes
     this.tourShots = [
@@ -414,11 +415,11 @@ export class CinematicCameraController {
       // Smooth sinusoidal shot drift
       const driftAngle = progress * 0.45;
 
-      const shotCamPos = activeShot.pos.clone();
-      shotCamPos.x += Math.sin(driftAngle) * 3.5;
-      shotCamPos.z += Math.cos(driftAngle) * 2.5;
+      this._shotCamPos.copy(activeShot.pos);
+      this._shotCamPos.x += Math.sin(driftAngle) * 3.5;
+      this._shotCamPos.z += Math.cos(driftAngle) * 2.5;
 
-      this.perspCamera.position.lerp(shotCamPos, Math.min(1.0, delta * 2.0));
+      this.perspCamera.position.lerp(this._shotCamPos, Math.min(1.0, delta * 2.0));
       this.currentCinematicTarget.lerp(activeShot.target, Math.min(1.0, delta * 2.5));
       this.perspCamera.lookAt(this.currentCinematicTarget);
       return;

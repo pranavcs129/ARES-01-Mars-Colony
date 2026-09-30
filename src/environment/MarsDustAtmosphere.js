@@ -1,15 +1,14 @@
 import * as THREE from 'three';
 
 /**
- * MarsDustAtmosphere — Restrained, subtle atmospheric dust haze.
- * Avoids large blurry blobs, brush strokes, or translucent circles.
- * Uses fine, sparse micro-motes to give natural depth while keeping the colony
- * and terrain completely clear and visible.
+ * MarsDustAtmosphere — Ultra-Lightweight, Subtle Martian Atmospheric Haze.
+ * Restrained to 55 microscopic motes for depth cueing without covering terrain or structures.
+ * Zero per-frame memory allocation.
  */
 export class MarsDustAtmosphere {
   constructor(scene) {
     this.scene = scene;
-    this.particleCount = 85; // Sparse, restrained count
+    this.particleCount = 55; // Extremely lightweight, subtle
     this.elapsed = 0;
     this.stormFactor = 0.0;
 
@@ -21,28 +20,26 @@ export class MarsDustAtmosphere {
     const positions = new Float32Array(this.particleCount * 3);
     const randomOffsets = new Float32Array(this.particleCount * 4);
 
-    // Distributed around the colony perimeter and low atmosphere
     for (let i = 0; i < this.particleCount; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 90;
-      positions[i * 3 + 1] = Math.random() * 14 + 0.5;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 90;
+      positions[i * 3] = (Math.random() - 0.5) * 85;
+      positions[i * 3 + 1] = Math.random() * 12 + 0.6;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 85;
 
-      randomOffsets[i * 4] = Math.random() * 0.35 + 0.65;  // Speed multiplier
-      randomOffsets[i * 4 + 1] = Math.random() * 0.15 + 0.05; // Vertical drift
-      randomOffsets[i * 4 + 2] = Math.random() * 0.4 + 0.6;   // Relative size
+      randomOffsets[i * 4] = Math.random() * 0.3 + 0.7;    // Speed
+      randomOffsets[i * 4 + 1] = Math.random() * 0.15 + 0.05; // Drift
+      randomOffsets[i * 4 + 2] = Math.random() * 0.4 + 0.6;   // Size
       randomOffsets[i * 4 + 3] = Math.random() * Math.PI * 2; // Phase
     }
 
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geo.setAttribute('aRandom', new THREE.BufferAttribute(randomOffsets, 4));
 
-    // Shader for subtle, microscopic silicate dust specks
     this.dustMaterial = new THREE.ShaderMaterial({
       uniforms: {
         time: { value: 0 },
         stormFactor: { value: 0.0 },
-        baseColor: { value: new THREE.Color(0x8a6550) },  // Muted natural regolith tan
-        stormColor: { value: new THREE.Color(0x9c5538) }  // Muted copper-brown
+        baseColor: { value: new THREE.Color(0x7c5844) },  // Muted natural regolith tan
+        stormColor: { value: new THREE.Color(0x8a4c32) }  // Muted copper
       },
       vertexShader: `
         attribute vec4 aRandom;
@@ -53,25 +50,23 @@ export class MarsDustAtmosphere {
         void main() {
           vec3 pos = position;
 
-          // Gentle laminar wind drift
-          float windSpeed = 1.8 + stormFactor * 12.0;
+          float windSpeed = 1.4 + stormFactor * 10.0;
           float t = time * windSpeed * aRandom.x;
 
-          pos.x += mod(t + aRandom.w * 40.0, 90.0) - 45.0;
-          pos.z += mod(t * 0.35 + aRandom.w * 25.0, 90.0) - 45.0;
-          pos.y += sin(time * 0.8 * aRandom.y + aRandom.w) * (0.4 + stormFactor * 1.5);
-          pos.y = mod(pos.y, 16.0) + 0.3;
+          pos.x += mod(t + aRandom.w * 35.0, 85.0) - 42.5;
+          pos.z += mod(t * 0.3 + aRandom.w * 20.0, 85.0) - 42.5;
+          pos.y += sin(time * 0.7 * aRandom.y + aRandom.w) * (0.3 + stormFactor * 1.2);
+          pos.y = mod(pos.y, 14.0) + 0.4;
 
           vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
           gl_Position = projectionMatrix * mvPosition;
 
-          // Tiny sharp micro-mote size (strictly 1.0px to 2.8px) - NO large blobs
+          // Microscopic point size (0.8px to 2.2px) - zero blurry blobs
           float dist = -mvPosition.z;
-          float baseSize = aRandom.z * (1.8 + stormFactor * 1.2);
-          gl_PointSize = clamp(baseSize / dist * 60.0, 1.0, 2.8);
+          float baseSize = aRandom.z * (1.4 + stormFactor * 0.8);
+          gl_PointSize = clamp(baseSize / dist * 50.0, 0.8, 2.2);
 
-          // Subtle falloff near ground and top
-          vAlpha = clamp(1.0 - (pos.y / 16.0), 0.1, 0.7);
+          vAlpha = clamp(1.0 - (pos.y / 14.0), 0.05, 0.6);
         }
       `,
       fragmentShader: `
@@ -85,12 +80,11 @@ export class MarsDustAtmosphere {
           float d = length(coord);
           if (d > 0.5) discard;
 
-          // Soft pinprick falloff
           float soft = smoothstep(0.5, 0.1, d);
           vec3 col = mix(baseColor, stormColor, stormFactor);
 
-          // Restrained low opacity - never obscures terrain
-          float alpha = soft * vAlpha * (0.09 + stormFactor * 0.18);
+          // Faint, non-distracting opacity
+          float alpha = soft * vAlpha * (0.06 + stormFactor * 0.14);
           gl_FragColor = vec4(col, alpha);
         }
       `,

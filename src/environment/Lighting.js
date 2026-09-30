@@ -1,30 +1,60 @@
 import * as THREE from 'three';
 
 /**
- * Lighting — Realistic, restrained Mars lighting with readable night mode.
- * Supports:
- * - Natural, balanced daylight with crisp shadows
- * - Soft golden dawn & dusk transitions
- * - Highly readable, atmospheric night (dark burgundy / muted brown regolith + cool celestial fill)
- *   ensuring terrain, dunes, and infrastructure are always clearly visible.
+ * Lighting — High-Performance, Cinematic Mars Lighting Engine.
+ * Performance Budget: Exactly 1 Directional Sun/Moon light + 1 Hemisphere light + 1 Ambient light.
+ * Zero per-frame object allocations (uses pre-allocated Vector3 and Color instances).
+ *
+ * Night Mode Target:
+ * - DARK MAROON / BROWN TERRAIN (clearly readable regolith texture & crater silhouettes)
+ * - COOL DARK-BLUE SKY AMBIENT FILL
+ * - SUBTLE NEUTRAL MOONLIGHT (overhead angle, no horizontal black shadow walls)
+ * - ZERO RED ALARM CAST, ZERO BLACKOUT
  */
 export class Lighting {
   constructor(scene) {
     this.scene = scene;
+
+    // Pre-allocated Vector3 and Colors to prevent GC pauses
+    this._sunPos = new THREE.Vector3();
+    this._targetHemiSky = new THREE.Color();
+    this._targetHemiGround = new THREE.Color();
+    this._targetAmbient = new THREE.Color();
+    this._targetDir = new THREE.Color();
+
+    // Key palette definitions
+    // Day palette
+    this.dayDirColor = new THREE.Color(0xfff2e6);
+    this.dayHemiSky = new THREE.Color(0xc8855e);
+    this.dayHemiGround = new THREE.Color(0x42261a);
+    this.dayAmbient = new THREE.Color(0x523326);
+
+    // Sunset / Dusk palette
+    this.sunsetDirColor = new THREE.Color(0xf5a25d);
+    this.sunsetHemiSky = new THREE.Color(0xb0653c);
+    this.sunsetHemiGround = new THREE.Color(0x381e14);
+    this.sunsetAmbient = new THREE.Color(0x4a2c1e);
+
+    // Night palette (NASA documentary: readable dark maroon/brown regolith + cool celestial fill)
+    this.nightDirColor = new THREE.Color(0x98aabf);   // Subtle neutral moonlight
+    this.nightHemiSky = new THREE.Color(0x3a4b62);    // Cool dark blue night sky fill
+    this.nightHemiGround = new THREE.Color(0x52362b); // Dark maroon / muted brown regolith
+    this.nightAmbient = new THREE.Color(0x564036);    // Preserves terrain & building silhouettes
+
     this.init();
   }
 
   init() {
     // 1. Hemisphere Light — Martian sky vs terrain regolith bounce
-    this.hemiLight = new THREE.HemisphereLight(0xc88258, 0x42261a, 0.8);
+    this.hemiLight = new THREE.HemisphereLight(0xc8855e, 0x42261a, 0.85);
     this.scene.add(this.hemiLight);
 
-    // 2. Ambient Light — soft fill to prevent pitch-black shadows & keep terrain readable
-    this.ambientLight = new THREE.AmbientLight(0x523326, 0.38);
+    // 2. Ambient Light — fills shadows, ensures terrain and buildings never go pitch-black
+    this.ambientLight = new THREE.AmbientLight(0x523326, 0.40);
     this.scene.add(this.ambientLight);
 
-    // 3. Directional Sun / Celestial Light
-    this.dirLight = new THREE.DirectionalLight(0xfff4ea, 2.25);
+    // 3. Directional Sun / Moonlight
+    this.dirLight = new THREE.DirectionalLight(0xfff2e6, 2.3);
     this.dirLight.position.set(35, 45, 25);
     this.dirLight.castShadow = true;
 
@@ -43,16 +73,10 @@ export class Lighting {
     this.dirLight.shadow.normalBias = 0.02;
 
     this.scene.add(this.dirLight);
-
-    // 4. Subtle secondary fill light (horizon bounce)
-    this.fillLight = new THREE.DirectionalLight(0x8a5238, 0.25);
-    this.fillLight.position.set(-25, 15, -20);
-    this.fillLight.castShadow = false;
-    this.scene.add(this.fillLight);
   }
 
   /**
-   * Updates lighting dynamically as the Sol clock advances
+   * Updates lighting smoothly across the continuous Sol diurnal cycle
    * @param {number} hour Sol hour (0.0 to 24.0)
    * @param {number} delta Delta seconds
    * @param {boolean} isDustStorm Whether dust storm event is active
@@ -62,52 +86,62 @@ export class Lighting {
     const sunElevation = Math.sin(solProgress);
     const sunAzimuth = Math.cos(solProgress);
 
-    const dist = 55;
-    const lx = Math.cos(sunAzimuth * 0.8 + 0.6) * Math.max(0.15, Math.cos(sunElevation)) * dist;
-    const ly = Math.max(3.0, Math.sin(sunElevation) * dist);
-    const lz = Math.sin(sunAzimuth * 0.8 + 0.6) * Math.max(0.15, Math.cos(sunElevation)) * dist;
+    // Continuous day factor: 1.0 (Full day), 0.5 (Twilight/Sunset), 0.0 (Night)
+    const dayFactor = THREE.MathUtils.clamp((sunElevation + 0.08) / 0.38, 0.0, 1.0);
+    const sunsetFactor = 1.0 - Math.abs(dayFactor - 0.5) * 2.0; // Peaks at twilight
 
-    this.dirLight.position.set(lx, ly, lz);
-
-    if (isDustStorm) {
-      // Dust Storm: Soft diffuse lighting, lower contrast, muted copper
-      this.dirLight.intensity = 0.8;
-      this.dirLight.color.setHex(0xc0683c);
-      this.hemiLight.intensity = 0.55;
-      this.hemiLight.color.setHex(0x8a4528);
-      this.hemiLight.groundColor.setHex(0x351d14);
-      this.ambientLight.intensity = 0.38;
-      this.ambientLight.color.setHex(0x4a2a1e);
-    } else if (sunElevation > 0.25) {
-      // High Sol: Natural warm-white sunlight, crisp readable shadows
-      this.dirLight.intensity = 2.25;
-      this.dirLight.color.setHex(0xfff4ea);
-      this.hemiLight.intensity = 0.8;
-      this.hemiLight.color.setHex(0xc88258);
-      this.hemiLight.groundColor.setHex(0x42261a);
-      this.ambientLight.intensity = 0.38;
-      this.ambientLight.color.setHex(0x523326);
-    } else if (sunElevation > -0.05) {
-      // Golden Hour / Sunset / Dawn: Gentle warm copper tones, longer shadows
-      const t = Math.max(0, (sunElevation + 0.05) / 0.3);
-      this.dirLight.intensity = 1.0 + t * 1.25;
-      this.dirLight.color.setHex(0xf5a560);
-      this.hemiLight.intensity = 0.5 + t * 0.3;
-      this.hemiLight.color.setHex(0xb0653c);
-      this.hemiLight.groundColor.setHex(0x321a12);
-      this.ambientLight.intensity = 0.32 + t * 0.06;
-      this.ambientLight.color.setHex(0x48291c);
+    if (dayFactor > 0.05) {
+      // Daytime / Sunset: Sun arcs naturally across the sky
+      const dist = 55;
+      const lx = Math.cos(sunAzimuth * 0.8 + 0.6) * Math.max(0.15, Math.cos(sunElevation)) * dist;
+      const ly = Math.max(4.0, Math.sin(sunElevation) * dist);
+      const lz = Math.sin(sunAzimuth * 0.8 + 0.6) * Math.max(0.15, Math.cos(sunElevation)) * dist;
+      this.dirLight.position.set(lx, ly, lz);
+      this.dirLight.castShadow = true;
     } else {
-      // Martian Night: Atmospheric, readable night!
-      // Dark burgundy / muted brown terrain + soft low-intensity ambient fill + cool celestial moonlight
-      // Terrain and structures remain clearly visible (NOT black, NOT blood red).
-      this.dirLight.intensity = 0.45;
-      this.dirLight.color.setHex(0x788aa2); // Pale cool celestial moonlight
-      this.hemiLight.intensity = 0.60;
-      this.hemiLight.color.setHex(0x323a48);       // Cool night sky fill
-      this.hemiLight.groundColor.setHex(0x241c18); // Dark burgundy/muted brown regolith
-      this.ambientLight.intensity = 0.40;
-      this.ambientLight.color.setHex(0x322c2a);   // Soft ambient fill ensuring terrain clarity
+      // Nighttime: Subtle moonlight from high overhead angle (y = 55)
+      // High angle prevents buildings from casting infinite horizontal shadow walls over the terrain
+      this.dirLight.position.set(22, 55, -28);
+      this.dirLight.castShadow = false; // Disable heavy hard shadows at night to keep terrain soft & readable
     }
+
+    // Smooth color & intensity interpolations
+    if (dayFactor > 0.5) {
+      // Day -> Sunset transition
+      const t = (dayFactor - 0.5) * 2.0; // 0.0 (sunset) to 1.0 (full day)
+      this._targetDir.lerpColors(this.sunsetDirColor, this.dayDirColor, t);
+      this._targetHemiSky.lerpColors(this.sunsetHemiSky, this.dayHemiSky, t);
+      this._targetHemiGround.lerpColors(this.sunsetHemiGround, this.dayHemiGround, t);
+      this._targetAmbient.lerpColors(this.sunsetAmbient, this.dayAmbient, t);
+
+      this.dirLight.intensity = THREE.MathUtils.lerp(1.4, 2.3, t);
+      this.hemiLight.intensity = THREE.MathUtils.lerp(0.7, 0.85, t);
+      this.ambientLight.intensity = THREE.MathUtils.lerp(0.38, 0.40, t);
+    } else {
+      // Sunset -> Night transition
+      const t = dayFactor * 2.0; // 0.0 (full night) to 1.0 (sunset)
+      this._targetDir.lerpColors(this.nightDirColor, this.sunsetDirColor, t);
+      this._targetHemiSky.lerpColors(this.nightHemiSky, this.sunsetHemiSky, t);
+      this._targetHemiGround.lerpColors(this.nightHemiGround, this.sunsetHemiGround, t);
+      this._targetAmbient.lerpColors(this.nightAmbient, this.sunsetAmbient, t);
+
+      this.dirLight.intensity = THREE.MathUtils.lerp(0.50, 1.4, t);
+      this.hemiLight.intensity = THREE.MathUtils.lerp(0.85, 0.7, t); // Higher fill at night for readability
+      this.ambientLight.intensity = THREE.MathUtils.lerp(0.65, 0.38, t); // Ambient preserves terrain texture
+    }
+
+    // Apply dust storm attenuation if active
+    if (isDustStorm) {
+      this.dirLight.intensity *= 0.45;
+      this.hemiLight.intensity *= 0.75;
+      this._targetDir.setHex(0xb05e38);
+      this._targetHemiSky.setHex(0x7c4228);
+    }
+
+    // Apply colors smoothly
+    this.dirLight.color.copy(this._targetDir);
+    this.hemiLight.color.copy(this._targetHemiSky);
+    this.hemiLight.groundColor.copy(this._targetHemiGround);
+    this.ambientLight.color.copy(this._targetAmbient);
   }
 }
