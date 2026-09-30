@@ -22,10 +22,11 @@ export class SceneManager {
     // Use transparent/null background to allow the dynamic MarsSky skydome to render
     this.scene.background = null;
 
-    // Atmospheric depth fog (warm Martian copper haze)
-    this.defaultFogColor = new THREE.Color(0x943d1a);
-    this.stormFogColor = new THREE.Color(0xb84218);
-    this.scene.fog = new THREE.FogExp2(0x943d1a, 0.0022);
+    // Atmospheric depth fog (subtle muted copper-brown haze, very light)
+    this.defaultFogColor = new THREE.Color(0x6e4332);
+    this.nightFogColor = new THREE.Color(0x1e191b);
+    this.stormFogColor = new THREE.Color(0x7c4226);
+    this.scene.fog = new THREE.FogExp2(0x6e4332, 0.0011);
 
     // 2. WebGL Renderer
     const width = this.container.clientWidth || window.innerWidth || 800;
@@ -41,7 +42,7 @@ export class SceneManager {
     this.renderer.shadowMap.autoUpdate = true; // Smooth real-time soft shadows
 
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.22;
+    this.renderer.toneMappingExposure = 1.15;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     // Clear previous canvas
@@ -130,11 +131,13 @@ export class SceneManager {
   /**
    * Sets atmospheric fog density and color for dust storms
    */
-  setDustStormIntensity(intensity = 0.0) {
+  setDustStormIntensity(intensity = 0.0, isNight = false) {
     if (!this.scene.fog) return;
     const clamped = Math.max(0.0, Math.min(1.0, intensity));
-    this.scene.fog.density = 0.0022 + clamped * 0.009;
-    this.scene.fog.color.lerpColors(this.defaultFogColor, this.stormFogColor, clamped);
+    const baseColor = isNight ? this.nightFogColor : this.defaultFogColor;
+    const baseDensity = isNight ? 0.0010 : 0.0011;
+    this.scene.fog.density = baseDensity + clamped * 0.0045;
+    this.scene.fog.color.lerpColors(baseColor, this.stormFogColor, clamped);
   }
 
   onWindowResize() {

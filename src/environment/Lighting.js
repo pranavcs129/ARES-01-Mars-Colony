@@ -1,13 +1,12 @@
 import * as THREE from 'three';
 
 /**
- * Lighting — High-Fidelity Cinematic Diurnal Mars Lighting & Shadow Engine.
+ * Lighting — Realistic, restrained Mars lighting with readable night mode.
  * Supports:
- * - Dynamic Sun progression tracking Sol hour (Golden Dawn, High Sol, Blue Sunset, Night)
- * - Ground bounce light from Martian red regolith
- * - Dust storm solar attenuation & atmospheric diffusion
- * - Nighttime celestial ambient & colony illumination
- * - Optimized PCF soft shadow cascades
+ * - Natural, balanced daylight with crisp shadows
+ * - Soft golden dawn & dusk transitions
+ * - Highly readable, atmospheric night (dark burgundy / muted brown regolith + cool celestial fill)
+ *   ensuring terrain, dunes, and infrastructure are always clearly visible.
  */
 export class Lighting {
   constructor(scene) {
@@ -16,16 +15,16 @@ export class Lighting {
   }
 
   init() {
-    // 1. Hemisphere Light — Martian sky vs red regolith ground bounce
-    this.hemiLight = new THREE.HemisphereLight(0xf69c5e, 0x3d170e, 0.95);
+    // 1. Hemisphere Light — Martian sky vs terrain regolith bounce
+    this.hemiLight = new THREE.HemisphereLight(0xc88258, 0x42261a, 0.8);
     this.scene.add(this.hemiLight);
 
-    // 2. Ambient Light — soft fill to prevent pitch-black shadows
-    this.ambientLight = new THREE.AmbientLight(0x733420, 0.45);
+    // 2. Ambient Light — soft fill to prevent pitch-black shadows & keep terrain readable
+    this.ambientLight = new THREE.AmbientLight(0x523326, 0.38);
     this.scene.add(this.ambientLight);
 
-    // 3. Directional Sun Light
-    this.dirLight = new THREE.DirectionalLight(0xffeedb, 2.6);
+    // 3. Directional Sun / Celestial Light
+    this.dirLight = new THREE.DirectionalLight(0xfff4ea, 2.25);
     this.dirLight.position.set(35, 45, 25);
     this.dirLight.castShadow = true;
 
@@ -45,8 +44,8 @@ export class Lighting {
 
     this.scene.add(this.dirLight);
 
-    // 4. Subtle secondary fill light (Martian horizon scatter)
-    this.fillLight = new THREE.DirectionalLight(0xb85d38, 0.4);
+    // 4. Subtle secondary fill light (horizon bounce)
+    this.fillLight = new THREE.DirectionalLight(0x8a5238, 0.25);
     this.fillLight.position.set(-25, 15, -20);
     this.fillLight.castShadow = false;
     this.scene.add(this.fillLight);
@@ -63,7 +62,6 @@ export class Lighting {
     const sunElevation = Math.sin(solProgress);
     const sunAzimuth = Math.cos(solProgress);
 
-    // Directional light position following the solar arc
     const dist = 55;
     const lx = Math.cos(sunAzimuth * 0.8 + 0.6) * Math.max(0.15, Math.cos(sunElevation)) * dist;
     const ly = Math.max(3.0, Math.sin(sunElevation) * dist);
@@ -71,43 +69,45 @@ export class Lighting {
 
     this.dirLight.position.set(lx, ly, lz);
 
-    // Color and intensity grading based on solar elevation
     if (isDustStorm) {
-      // Dust Storm: Dimmest sun, eerie amber-red diffuse light
-      this.dirLight.intensity = 0.6;
-      this.dirLight.color.setHex(0xe65c28);
-      this.hemiLight.intensity = 0.5;
-      this.hemiLight.color.setHex(0x993d1a);
-      this.hemiLight.groundColor.setHex(0x3a1208);
-      this.ambientLight.intensity = 0.35;
-      this.ambientLight.color.setHex(0x5e2210);
+      // Dust Storm: Soft diffuse lighting, lower contrast, muted copper
+      this.dirLight.intensity = 0.8;
+      this.dirLight.color.setHex(0xc0683c);
+      this.hemiLight.intensity = 0.55;
+      this.hemiLight.color.setHex(0x8a4528);
+      this.hemiLight.groundColor.setHex(0x351d14);
+      this.ambientLight.intensity = 0.38;
+      this.ambientLight.color.setHex(0x4a2a1e);
     } else if (sunElevation > 0.25) {
-      // High Sol: Crisp white-gold illumination, deep shadows
-      this.dirLight.intensity = 2.65;
-      this.dirLight.color.setHex(0xffeedb);
-      this.hemiLight.intensity = 0.95;
-      this.hemiLight.color.setHex(0xf69c5e);
-      this.hemiLight.groundColor.setHex(0x3d170e);
-      this.ambientLight.intensity = 0.45;
-      this.ambientLight.color.setHex(0x733420);
+      // High Sol: Natural warm-white sunlight, crisp readable shadows
+      this.dirLight.intensity = 2.25;
+      this.dirLight.color.setHex(0xfff4ea);
+      this.hemiLight.intensity = 0.8;
+      this.hemiLight.color.setHex(0xc88258);
+      this.hemiLight.groundColor.setHex(0x42261a);
+      this.ambientLight.intensity = 0.38;
+      this.ambientLight.color.setHex(0x523326);
     } else if (sunElevation > -0.05) {
-      // Dawn / Golden Hour / Twilight: Dramatic warm golden-copper tones
+      // Golden Hour / Sunset / Dawn: Gentle warm copper tones, longer shadows
       const t = Math.max(0, (sunElevation + 0.05) / 0.3);
-      this.dirLight.intensity = 0.8 + t * 1.6;
-      this.dirLight.color.setHex(0xffa85c);
-      this.hemiLight.intensity = 0.4 + t * 0.5;
-      this.hemiLight.color.setHex(0xdf6420);
-      this.hemiLight.groundColor.setHex(0x280e07);
-      this.ambientLight.intensity = 0.25 + t * 0.2;
+      this.dirLight.intensity = 1.0 + t * 1.25;
+      this.dirLight.color.setHex(0xf5a560);
+      this.hemiLight.intensity = 0.5 + t * 0.3;
+      this.hemiLight.color.setHex(0xb0653c);
+      this.hemiLight.groundColor.setHex(0x321a12);
+      this.ambientLight.intensity = 0.32 + t * 0.06;
+      this.ambientLight.color.setHex(0x48291c);
     } else {
-      // Martian Night: Deep starlight / Phobos celestial illumination
-      this.dirLight.intensity = 0.25;
-      this.dirLight.color.setHex(0x5a6d88); // Cool celestial moonlight
-      this.hemiLight.intensity = 0.35;
-      this.hemiLight.color.setHex(0x282e3f);
-      this.hemiLight.groundColor.setHex(0x120808);
-      this.ambientLight.intensity = 0.2;
-      this.ambientLight.color.setHex(0x1a1c28);
+      // Martian Night: Atmospheric, readable night!
+      // Dark burgundy / muted brown terrain + soft low-intensity ambient fill + cool celestial moonlight
+      // Terrain and structures remain clearly visible (NOT black, NOT blood red).
+      this.dirLight.intensity = 0.45;
+      this.dirLight.color.setHex(0x788aa2); // Pale cool celestial moonlight
+      this.hemiLight.intensity = 0.60;
+      this.hemiLight.color.setHex(0x323a48);       // Cool night sky fill
+      this.hemiLight.groundColor.setHex(0x241c18); // Dark burgundy/muted brown regolith
+      this.ambientLight.intensity = 0.40;
+      this.ambientLight.color.setHex(0x322c2a);   // Soft ambient fill ensuring terrain clarity
     }
   }
 }

@@ -5,11 +5,12 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 
 /**
- * PostProcessingPipeline — Cinematic Bloom, Tone Mapping, and Color Grading.
- * Brings the Mars Colony to life with:
- * - Subtle, photorealistic bloom on emissive hydroponics, rovers, conduits, beacons, and sun glints
- * - Proper ACESFilmic tone mapping and sRGB output
- * - Graceful fallback to raw WebGL rendering if post-processing throws or underperforms
+ * PostProcessingPipeline — Restrained, realistic cinematic post-processing.
+ * Features:
+ * - Subtle, high-threshold bloom (0.92 threshold, 0.18 strength) strictly limited to
+ *   genuinely bright emissives (greenhouse grow lights, beacon strobes).
+ * - Zero glowing ground, zero glowing rocks, zero whole-colony halo.
+ * - ACESFilmic tone mapping and sRGB output.
  */
 export class PostProcessingPipeline {
   constructor(renderer, scene, camera, container) {
@@ -30,7 +31,6 @@ export class PostProcessingPipeline {
       const width = this.container.clientWidth || window.innerWidth || 800;
       const height = this.container.clientHeight || window.innerHeight || 600;
 
-      // Render target with half float type for HDR bloom buffer
       const renderTarget = new THREE.WebGLRenderTarget(width, height, {
         type: THREE.HalfFloatType,
         format: THREE.RGBAFormat,
@@ -40,7 +40,6 @@ export class PostProcessingPipeline {
       });
 
       this.composer = new EffectComposer(this.renderer, renderTarget);
-      // Downscale bloom pass slightly for smooth 60fps performance on all GPUs
       this.composer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
       this.composer.setSize(width, height);
 
@@ -48,13 +47,13 @@ export class PostProcessingPipeline {
       this.renderPass = new RenderPass(this.scene, this.camera);
       this.composer.addPass(this.renderPass);
 
-      // 2. Cinematic Unreal Bloom Pass
-      // Resolution, strength, radius, threshold
+      // 2. Restrained Bloom Pass
+      // Very high threshold (0.92) & low strength (0.18) so terrain and normal structures NEVER glow
       this.bloomPass = new UnrealBloomPass(
         new THREE.Vector2(width * 0.5, height * 0.5),
-        0.58, // Bloom strength (subtle, rich)
-        0.35, // Bloom radius
-        0.82  // Bloom threshold (only bright highlights bloom)
+        0.18, // Restrained bloom strength
+        0.22, // Tight bloom radius
+        0.92  // High threshold (only hot emissives glow)
       );
       this.composer.addPass(this.bloomPass);
 
@@ -62,7 +61,7 @@ export class PostProcessingPipeline {
       this.outputPass = new OutputPass();
       this.composer.addPass(this.outputPass);
 
-      console.log('%c✨ Cinematic Post-Processing Pipeline online.', 'color: #f59e0b; font-weight: bold;');
+      console.log('%c✨ Restrained Post-Processing Pipeline online.', 'color: #10b981; font-weight: bold;');
     } catch (err) {
       console.warn('[PostProcessingPipeline] Post-processing initialization failed, falling back to standard render:', err.message);
       this.isSupported = false;
@@ -97,7 +96,6 @@ export class PostProcessingPipeline {
       }
     }
 
-    // Direct fallback render
     if (this.renderer && this.scene && this.camera) {
       this.renderer.render(this.scene, this.camera);
     }

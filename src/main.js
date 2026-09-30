@@ -68,20 +68,20 @@ async function bootstrap() {
     const environmentSync = {
       update: (delta) => {
         const hour = simulationManager ? simulationManager.hour : 12.0;
+        const isNight = hour < 5.8 || hour > 19.5;
         const isDustStorm = simulationManager
           ? simulationManager.eventManager.activeEvents.some(e => e.type === 'DUST_STORM')
           : false;
 
         sky.update(hour, delta, isDustStorm);
         lighting.update(hour, delta, isDustStorm);
-        dust.update(delta, isDustStorm, lighting.dirLight.position.clone().normalize());
+        dust.update(delta, isDustStorm);
 
         if (lifeManager) {
-          const isNight = hour < 5.8 || hour > 19.5;
           lifeManager.update(delta, isNight, isDustStorm);
         }
 
-        sceneManager.setDustStormIntensity(isDustStorm ? 1.0 : 0.0);
+        sceneManager.setDustStormIntensity(isDustStorm ? 1.0 : 0.0, isNight);
       }
     };
     sceneManager.registerUpdatable(environmentSync);

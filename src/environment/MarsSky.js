@@ -1,12 +1,15 @@
 import * as THREE from 'three';
 
 /**
- * MarsSky — Cinematic Martian Skydome, Atmospheric Scattering, Celestial Bodies & Dynamic Sun.
- * Creates an authentic Martian celestial sphere:
- * - Gradient atmospheric dome (rich copper/cinnabar horizon fading into twilight mauve and deep cosmic void)
- * - Distant procedural starfield with thousands of twinkling stars
- * - Martian Moons: Phobos (larger, irregular) and Deimos (smaller, distant)
- * - Dynamic Sun disc with warm corona halo, physically tracking the Sol time-of-day
+ * MarsSky — Restrained, realistic NASA-style Martian sky dome.
+ * Features:
+ * - Natural, silky atmospheric gradient:
+ *   Horizon: warm dusty orange / muted copper
+ *   Upper sky: desaturated dark mauve / brown
+ *   Zenith: very dark muted blue-black
+ * - Subtle, realistic-scale sun disc (no giant dominating fireball)
+ * - Sparse, faint, cool-white background stars (completely invisible in daytime)
+ * - Distant, low-brightness Phobos & Deimos rocky moons
  */
 export class MarsSky {
   constructor(scene) {
@@ -24,16 +27,15 @@ export class MarsSky {
   }
 
   initSkyDome() {
-    // Large hemisphere dome centered at colony origin
     const skyGeo = new THREE.SphereGeometry(450, 32, 24);
 
-    // Custom gradient vertex/fragment shader for Mars atmospheric scattering
+    // Subtle, gentle atmospheric scattering shader without hard bands or neon saturation
     const skyMat = new THREE.ShaderMaterial({
       uniforms: {
-        topColor: { value: new THREE.Color(0x060205) },       // Deep space vacuum
-        midColor: { value: new THREE.Color(0x280e12) },       // High Martian atmosphere
-        horizonColor: { value: new THREE.Color(0xaf4320) },   // Warm Martian dust horizon
-        sunColor: { value: new THREE.Color(0xffcca0) },       // Sun glow
+        topColor: { value: new THREE.Color(0x0c0e14) },      // Very dark muted blue-black
+        midColor: { value: new THREE.Color(0x322228) },      // Desaturated dark mauve / brown
+        horizonColor: { value: new THREE.Color(0x9e5232) },  // Warm dusty orange / muted copper
+        sunColor: { value: new THREE.Color(0xfde5c8) },      // Gentle sun highlight
         sunPosition: { value: new THREE.Vector3(0.5, 0.4, 0.3).normalize() },
         dustStormIntensity: { value: 0.0 }
       },
@@ -58,20 +60,20 @@ export class MarsSky {
           vec3 dir = normalize(vWorldPosition);
           float elevation = clamp(dir.y, 0.0, 1.0);
 
-          // Mars Atmospheric Gradient
-          vec3 sky = mix(horizonColor, midColor, pow(elevation, 0.45));
-          sky = mix(sky, topColor, pow(elevation, 1.6));
+          // Silky smooth, restrained atmospheric transitions
+          vec3 sky = mix(horizonColor, midColor, pow(elevation, 0.55));
+          sky = mix(sky, topColor, pow(elevation, 1.45));
 
-          // Forward Mie scattering sun glow in dusty atmosphere
+          // Tight, subtle sun glow (no giant sky-covering glare)
           float cosTheta = dot(dir, normalize(sunPosition));
           if (cosTheta > 0.0) {
-            float sunGlow = pow(cosTheta, 32.0) * 0.75 + pow(cosTheta, 6.0) * 0.35;
-            sky += sunColor * sunGlow * clamp(sunPosition.y * 1.5 + 0.1, 0.0, 1.0);
+            float sunGlow = pow(cosTheta, 64.0) * 0.28 + pow(cosTheta, 16.0) * 0.08;
+            sky += sunColor * sunGlow * clamp(sunPosition.y * 1.2, 0.0, 1.0);
           }
 
-          // In heavy dust storm, atmosphere turns thick opaque copper-red
-          vec3 stormSky = vec3(0.48, 0.16, 0.08);
-          sky = mix(sky, stormSky, dustStormIntensity * 0.85);
+          // Subtle muted copper shift during dust storms
+          vec3 stormSky = vec3(0.38, 0.18, 0.11);
+          sky = mix(sky, stormSky, dustStormIntensity * 0.75);
 
           gl_FragColor = vec4(sky, 1.0);
         }
@@ -86,7 +88,8 @@ export class MarsSky {
   }
 
   initStarfield() {
-    const starCount = 1400;
+    // Sparse, quiet background starfield (260 faint cool-white stars)
+    const starCount = 260;
     const starGeo = new THREE.BufferGeometry();
     const positions = new Float32Array(starCount * 3);
     const colors = new Float32Array(starCount * 3);
@@ -94,29 +97,19 @@ export class MarsSky {
 
     const radius = 430;
     for (let i = 0; i < starCount; i++) {
-      // Distribute stars on upper hemisphere
       const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(Math.random() * 0.85 + 0.15); // Above horizon
+      const phi = Math.acos(Math.random() * 0.75 + 0.25); // Well above horizon
 
-      const x = radius * Math.sin(phi) * Math.cos(theta);
-      const y = radius * Math.cos(phi);
-      const z = radius * Math.sin(phi) * Math.sin(theta);
+      positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+      positions[i * 3 + 1] = radius * Math.cos(phi);
+      positions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta);
 
-      positions[i * 3] = x;
-      positions[i * 3 + 1] = y;
-      positions[i * 3 + 2] = z;
+      // Cool-white / pale diamond stars (NO orange glowing particles)
+      colors[i * 3] = 0.88;
+      colors[i * 3 + 1] = 0.92;
+      colors[i * 3 + 2] = 0.98;
 
-      // Realistic subtle stellar spectral classes (warm white, pale blue, golden)
-      const starType = Math.random();
-      if (starType > 0.85) {
-        colors[i * 3] = 0.75; colors[i * 3 + 1] = 0.85; colors[i * 3 + 2] = 1.0; // Blue-white
-      } else if (starType > 0.6) {
-        colors[i * 3] = 1.0; colors[i * 3 + 1] = 0.88; colors[i * 3 + 2] = 0.65; // Yellow-gold
-      } else {
-        colors[i * 3] = 0.95; colors[i * 3 + 1] = 0.95; colors[i * 3 + 2] = 0.98; // White
-      }
-
-      sizes[i] = Math.random() * 1.8 + 0.8;
+      sizes[i] = Math.random() * 0.8 + 0.6; // Small, pinpoint stars
     }
 
     starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -126,7 +119,7 @@ export class MarsSky {
     const starMat = new THREE.ShaderMaterial({
       uniforms: {
         time: { value: 0 },
-        starAlpha: { value: 1.0 }
+        starAlpha: { value: 0.0 }
       },
       vertexShader: `
         attribute float size;
@@ -137,10 +130,9 @@ export class MarsSky {
         void main() {
           vColor = color;
           vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-          // Subtle twinkle
-          float twinkle = sin(time * 2.0 + position.x * 0.05 + position.z * 0.05) * 0.3 + 0.7;
+          float twinkle = sin(time * 1.5 + position.x * 0.02 + position.z * 0.02) * 0.15 + 0.85;
           vAlpha = twinkle;
-          gl_PointSize = size * (240.0 / -mvPosition.z) * twinkle;
+          gl_PointSize = size * (200.0 / -mvPosition.z);
           gl_Position = projectionMatrix * mvPosition;
         }
       `,
@@ -152,12 +144,12 @@ export class MarsSky {
           vec2 coord = gl_PointCoord - vec2(0.5);
           float dist = length(coord);
           if (dist > 0.5) discard;
-          float falloff = smoothstep(0.5, 0.0, dist);
+          float falloff = smoothstep(0.5, 0.1, dist);
           gl_FragColor = vec4(vColor, falloff * vAlpha * starAlpha);
         }
       `,
       transparent: true,
-      blending: THREE.AdditiveBlending,
+      blending: THREE.NormalBlending,
       depthWrite: false
     });
 
@@ -169,61 +161,58 @@ export class MarsSky {
   initCelestialMoons() {
     this.moonGroup = new THREE.Group();
 
-    // 1. Phobos — larger, closer, moves rapidly across the Martian sky
-    const phobosGeo = new THREE.DodecahedronGeometry(3.6, 2);
-    // Add subtle irregularity to simulate asteroid potato shape
+    // 1. Phobos — small, distant, muted rocky irregular asteroid
+    const phobosGeo = new THREE.DodecahedronGeometry(0.85, 2);
     const pos = phobosGeo.attributes.position;
     for (let i = 0; i < pos.count; i++) {
       const vx = pos.getX(i);
       const vy = pos.getY(i);
       const vz = pos.getZ(i);
-      const scale = 1.0 + Math.sin(vx * 1.5) * 0.12 - Math.cos(vz * 1.2) * 0.1;
-      pos.setXYZ(i, vx * scale, vy * 0.88 * scale, vz * 1.15 * scale);
+      const scale = 1.0 + Math.sin(vx * 2.0) * 0.08 - Math.cos(vz * 1.5) * 0.07;
+      pos.setXYZ(i, vx * scale, vy * 0.85 * scale, vz * 1.1 * scale);
     }
     phobosGeo.computeVertexNormals();
 
     const phobosMat = new THREE.MeshStandardMaterial({
-      color: 0x8a7f78,
-      roughness: 0.95,
-      metalness: 0.05,
-      emissive: 0x14100e
+      color: 0x645e58,
+      roughness: 0.98,
+      metalness: 0.02,
+      emissive: 0x080706
     });
 
     this.phobos = new THREE.Mesh(phobosGeo, phobosMat);
-    this.phobos.position.set(-160, 180, -220);
+    this.phobos.position.set(-150, 180, -210);
     this.moonGroup.add(this.phobos);
 
-    // 2. Deimos — smaller, bright planetary point in the sky
-    const deimosGeo = new THREE.SphereGeometry(1.4, 12, 12);
+    // 2. Deimos — tiny faint distant pinprick
+    const deimosGeo = new THREE.SphereGeometry(0.35, 8, 8);
     const deimosMat = new THREE.MeshBasicMaterial({
-      color: 0xd2c6bd
+      color: 0x888890
     });
     this.deimos = new THREE.Mesh(deimosGeo, deimosMat);
-    this.deimos.position.set(220, 240, -180);
+    this.deimos.position.set(210, 240, -180);
     this.moonGroup.add(this.deimos);
 
     this.skyGroup.add(this.moonGroup);
   }
 
   initSunDisc() {
-    // Sun disc billboard with glowing corona
-    const sunGeo = new THREE.PlaneGeometry(36, 36);
+    // Subtle sun disc with restrained, tight corona (radius ~5m at 380m distance ≈ 0.4° diameter)
+    const sunGeo = new THREE.PlaneGeometry(9, 9);
 
-    // Generate high-resolution smooth radial gradient corona texture
     const canvas = document.createElement('canvas');
-    canvas.width = 128;
-    canvas.height = 128;
+    canvas.width = 64;
+    canvas.height = 64;
     const ctx = canvas.getContext('2d');
 
-    const grad = ctx.createRadialGradient(64, 64, 4, 64, 64, 64);
-    grad.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
-    grad.addColorStop(0.12, 'rgba(255, 235, 200, 0.9)');
-    grad.addColorStop(0.35, 'rgba(255, 180, 120, 0.45)');
-    grad.addColorStop(0.7, 'rgba(230, 110, 50, 0.12)');
-    grad.addColorStop(1, 'rgba(200, 80, 30, 0.0)');
+    const grad = ctx.createRadialGradient(32, 32, 2, 32, 32, 32);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+    grad.addColorStop(0.2, 'rgba(255, 245, 225, 0.7)');
+    grad.addColorStop(0.5, 'rgba(240, 190, 150, 0.25)');
+    grad.addColorStop(1, 'rgba(210, 140, 90, 0.0)');
 
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 128, 128);
+    ctx.fillRect(0, 0, 64, 64);
 
     const sunTexture = new THREE.CanvasTexture(canvas);
 
@@ -240,16 +229,9 @@ export class MarsSky {
     this.skyGroup.add(this.sunMesh);
   }
 
-  /**
-   * Updates sky dome, celestial bodies, and sun position based on simulation Sol hour
-   * @param {number} hour Sol hour (0.0 to 24.0)
-   * @param {number} delta Delta seconds
-   * @param {boolean} isDustStorm Whether dust storm is active
-   */
   update(hour = 12.0, delta = 0.016, isDustStorm = false) {
     this.elapsed += delta;
 
-    // Martian solar angle: 0h = midnight, 6h = dawn, 12h = midday, 18h = dusk
     const solProgress = (hour / 24.0) * Math.PI * 2 - Math.PI / 2;
     const sunElevation = Math.sin(solProgress);
     const sunAzimuth = Math.cos(solProgress);
@@ -262,53 +244,53 @@ export class MarsSky {
     this.sunMesh.position.set(sunX, sunY, sunZ);
     this.sunMesh.lookAt(0, 0, 0);
 
-    // Update shader uniforms
     if (this.skyMat && this.skyMat.uniforms) {
       this.skyMat.uniforms.sunPosition.value.set(sunX, Math.max(0.01, sunY), sunZ).normalize();
 
-      // Atmospheric color shifts based on sun elevation
       if (sunElevation > 0.25) {
-        // High Sol: Crisp copper horizon, dark mauve zenith
-        this.skyMat.uniforms.horizonColor.value.set(0xba4e26);
-        this.skyMat.uniforms.midColor.value.set(0x35161c);
-        this.skyMat.uniforms.topColor.value.set(0x060205);
-        this.sunMesh.scale.setScalar(1.0);
+        // High Sol: Natural warm dusty orange horizon, dark mauve upper sky, dark blue-black zenith
+        this.skyMat.uniforms.horizonColor.value.set(0x9e5232);
+        this.skyMat.uniforms.midColor.value.set(0x322228);
+        this.skyMat.uniforms.topColor.value.set(0x0c0e14);
         this.sunMesh.visible = true;
       } else if (sunElevation > -0.05) {
-        // Golden Dawn / Dusk: Rich amber-gold glow, violet twilight
-        this.skyMat.uniforms.horizonColor.value.set(0xdf6420);
-        this.skyMat.uniforms.midColor.value.set(0x421528);
-        this.skyMat.uniforms.topColor.value.set(0x0a040e);
-        this.sunMesh.scale.setScalar(1.2);
+        // Dawn / Sunset: Gentle warm copper horizon, desaturated mauve
+        this.skyMat.uniforms.horizonColor.value.set(0xb25d32);
+        this.skyMat.uniforms.midColor.value.set(0x382028);
+        this.skyMat.uniforms.topColor.value.set(0x090a10);
         this.sunMesh.visible = true;
       } else {
-        // Martian Night: Deep indigo-black celestial sky
-        this.skyMat.uniforms.horizonColor.value.set(0x180a0e);
-        this.skyMat.uniforms.midColor.value.set(0x0d050a);
-        this.skyMat.uniforms.topColor.value.set(0x030104);
+        // Martian Night: Quiet, dark burgundy-brown horizon, muted charcoal-mauve, cosmic dark void
+        this.skyMat.uniforms.horizonColor.value.set(0x1e1616);
+        this.skyMat.uniforms.midColor.value.set(0x121016);
+        this.skyMat.uniforms.topColor.value.set(0x050609);
         this.sunMesh.visible = false;
       }
 
-      // Smooth transition for dust storm intensity
       const targetDust = isDustStorm ? 1.0 : 0.0;
       this.skyMat.uniforms.dustStormIntensity.value +=
         (targetDust - this.skyMat.uniforms.dustStormIntensity.value) * Math.min(1.0, delta * 2.0);
     }
 
-    // Star opacity: Visible at twilight/night, dimmed during bright midday
+    // Stars: Completely invisible during daylight, faint (max 0.32) during night
     if (this.starMat && this.starMat.uniforms) {
       this.starMat.uniforms.time.value = this.elapsed;
-      const targetStarAlpha = Math.max(0.12, 1.0 - Math.max(0, sunElevation) * 1.3);
+      const targetStarAlpha = sunElevation < 0 ? Math.min(0.32, -sunElevation * 0.45) : 0.0;
       this.starMat.uniforms.starAlpha.value = targetStarAlpha;
     }
 
-    // Orbit Phobos across the sky
+    // Slow, distant celestial transit of Phobos
     if (this.phobos) {
-      const phobosAngle = this.elapsed * 0.04;
+      const phobosAngle = this.elapsed * 0.02;
       this.phobos.position.x = Math.sin(phobosAngle) * 260;
-      this.phobos.position.y = 140 + Math.cos(phobosAngle) * 45;
+      this.phobos.position.y = 150 + Math.cos(phobosAngle) * 35;
       this.phobos.position.z = Math.cos(phobosAngle) * 240;
-      this.phobos.rotation.y += delta * 0.08;
+    }
+  }
+
+  dispose() {
+    if (this.skyGroup && this.scene) {
+      this.scene.remove(this.skyGroup);
     }
   }
 }
