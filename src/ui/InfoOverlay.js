@@ -568,40 +568,7 @@ export class InfoOverlay {
           </svg>
         </button>
 
-        <!-- Compass & Orbit Widget -->
-        <div class="camera-control-stack">
-          <div class="compass-widget ares-glass-pill" id="btn-camera-compass" title="Orientation Compass (Click to reset North)">
-            <span class="compass-north-letter">N</span>
-            <svg viewBox="0 0 56 56" class="compass-svg">
-              <!-- Outer subtle rings -->
-              <circle cx="28" cy="28" r="25.5" fill="none" stroke="rgba(255, 255, 255, 0.12)" stroke-width="1" />
-              <circle cx="28" cy="28" r="21" fill="none" stroke="rgba(255, 255, 255, 0.06)" stroke-width="1" stroke-dasharray="2 2" />
-              <!-- Subtle tick markers -->
-              <line x1="28" y1="4.5" x2="28" y2="9" stroke="rgba(255, 255, 255, 0.45)" stroke-width="1.2" />
-              <line x1="28" y1="47" x2="28" y2="51.5" stroke="rgba(255, 255, 255, 0.18)" stroke-width="1" />
-              <line x1="4.5" y1="28" x2="9" y2="28" stroke="rgba(255, 255, 255, 0.18)" stroke-width="1" />
-              <line x1="47" y1="28" x2="51.5" y2="28" stroke="rgba(255, 255, 255, 0.18)" stroke-width="1" />
-              <!-- Rotating needle group representing current camera azimuth -->
-              <g id="compass-needle-group" transform="rotate(0 28 28)">
-                <polygon points="28,12 32,28 28,25 24,28" fill="#ffffff" />
-                <polygon points="28,44 32,28 28,25 24,28" fill="rgba(255, 255, 255, 0.22)" />
-                <circle cx="28" cy="28" r="2.5" fill="#ffffff" />
-              </g>
-            </svg>
-          </div>
 
-          <div class="camera-orbit-pill ares-glass-pill" id="btn-camera-orbit" title="Orbit Camera View (Click to rotate 45°)">
-            <span>CAMERA</span>
-            <span>ORBIT</span>
-          </div>
-
-          <button id="btn-cinema-cam-mode" class="left-nav-btn ares-glass-pill cinema-cam-btn" title="Toggle Cinematic Perspective Mode (Hotkey: C)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
-              <path d="M15 10l5-3v10l-5-3v-4z"/>
-              <rect x="2" y="6" width="13" height="12" rx="2"/>
-            </svg>
-          </button>
-        </div>
       </div>
 
       <!-- EXACT BOTTOM-RIGHT FLOATING ACCESS BUTTON: Standalone Resource Management -->
