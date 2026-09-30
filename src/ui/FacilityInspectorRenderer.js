@@ -4,7 +4,7 @@
  * 100% data-driven, unified across all colony structures.
  */
 
-import { getFacilityProfile } from '../data/FacilityConfig.js';
+import { getFacilityProfile, getStructureImage } from '../data/FacilityConfig.js';
 
 export class FacilityInspectorRenderer {
   /**
@@ -153,9 +153,14 @@ export class FacilityInspectorRenderer {
    * Renders full master inspector HTML matching the reference greenhouse facility card
    * Accepts live simulation data override to show real-time allocation, condition, and priority.
    */
-  static renderFacilityHtml(facilityId, liveData = null) {
-    const p = getFacilityProfile(facilityId);
+  static renderFacilityHtml(facilityIdOrObj, liveData = null) {
+    const rawId = (typeof facilityIdOrObj === 'object' && facilityIdOrObj !== null)
+      ? (facilityIdOrObj.id || facilityIdOrObj.type || facilityIdOrObj.name)
+      : facilityIdOrObj;
+    const p = getFacilityProfile(rawId);
     const catIcon = this.getCategoryIconSvg(p.category);
+    const rawStructureImage = p.image || getStructureImage(facilityIdOrObj || p.id);
+    const structureImage = encodeURI(rawStructureImage);
 
     const status = liveData?.status || p.status;
     const condition = liveData?.condition || p.condition;
@@ -221,7 +226,14 @@ export class FacilityInspectorRenderer {
             <p class="f-desc">${p.description}</p>
           </div>
           <div class="f-hero-preview" aria-hidden="true">
-            ${p.previewSvg || ''}
+            <img 
+              src="${structureImage}" 
+              alt="${p.title}" 
+              class="f-structure-thumb" 
+              loading="eager"
+              decoding="sync"
+              onerror="if(!this.dataset.fallback){this.dataset.fallback='1';this.src='${rawStructureImage}';}else if(this.dataset.fallback==='1'){this.dataset.fallback='2';this.src='${structureImage.replace('structure%20icon%20bg', 'structure_icon_bg').replace('structure%20icon', 'structure_icon')}';}"
+            />
           </div>
         </div>
 

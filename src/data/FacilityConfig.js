@@ -4,9 +4,123 @@
  * Provides full master card metadata, visual previews, resource metrics, and performance charts.
  */
 
+/**
+ * ONE Centralized mapping between facility / structure type and background-removed image file.
+ * Uses the exact real filenames inside /assets/structure icon/.
+ */
+export const STRUCTURE_IMAGE_MAP = {
+  // Uppercase facility types
+  LAUNCHING_PAD: '/assets/structure icon bg/launch centre.png',
+  COMMAND_CORE: '/assets/structure icon bg/central command core.png',
+  SOLAR_ARRAY: '/assets/structure icon bg/solar power array.png',
+  CEA_GREENHOUSE: '/assets/structure icon bg/CEA greenhouse.png',
+  RESEARCH_CENTRE: '/assets/structure icon bg/research centre.png',
+  POWER_SYSTEM: '/assets/structure icon bg/power system.png',
+  HABITAT: '/assets/structure icon bg/habitat.png',
+  WATER_EXTRACTION: '/assets/structure icon bg/water extaration.png',
+  AUTOMATED_MINING: '/assets/structure icon bg/automated mining.png',
+  OXYGEN_GENERATION: '/assets/structure icon bg/oxygen generartion.png',
+  STORAGE_DEPOT: '/assets/structure icon bg/storage centre.png',
+  STORAGE: '/assets/structure icon bg/storage.png',
+
+  // ID and alias mappings (for 3D scene node names, IDs, titles, and types)
+  rocket: '/assets/structure icon bg/launch centre.png',
+  central_hub: '/assets/structure icon bg/central command core.png',
+  solar: '/assets/structure icon bg/solar power array.png',
+  greenhouse: '/assets/structure icon bg/CEA greenhouse.png',
+  research_lab: '/assets/structure icon bg/research centre.png',
+  power: '/assets/structure icon bg/power system.png',
+  habitat: '/assets/structure icon bg/habitat.png',
+  water: '/assets/structure icon bg/water extaration.png',
+  mining: '/assets/structure icon bg/automated mining.png',
+  oxygen: '/assets/structure icon bg/oxygen generartion.png',
+  storage_depot: '/assets/structure icon bg/storage centre.png',
+  battery: '/assets/structure icon bg/storage.png',
+  storage: '/assets/structure icon bg/storage.png'
+};
+
+/**
+ * Resolves the matching background-removed structure image from /assets/structure icon bg/
+ * based on selected facility id, type, title, name, or object.
+ *
+ * @param {string|object} facility - Facility ID, type name, title, or facility data object
+ * @returns {string} Image path in /assets/structure icon bg/
+ */
+export function getStructureImage(facility) {
+  if (!facility) return STRUCTURE_IMAGE_MAP.CEA_GREENHOUSE;
+
+  // If already an image path pointing to structure icon
+  if (typeof facility === 'string' && (facility.startsWith('/assets/structure icon') || facility.startsWith('/assets/structure_icon'))) {
+    return facility;
+  }
+
+  // If facility object passed
+  if (typeof facility === 'object') {
+    if (facility.image && typeof facility.image === 'string') return facility.image;
+    // Check properties in priority order: type, id, title, name, subtitle
+    const candidateKeys = [facility.type, facility.id, facility.title, facility.name, facility.subtitle];
+    for (const cand of candidateKeys) {
+      if (cand) {
+        const found = getStructureImage(cand);
+        if (found) return found;
+      }
+    }
+  }
+
+  // String lookup
+  const raw = String(facility).trim();
+  const upper = raw.toUpperCase().replace(/[\s\-_]+/g, '_');
+  if (STRUCTURE_IMAGE_MAP[upper]) return STRUCTURE_IMAGE_MAP[upper];
+
+  const lower = raw.toLowerCase();
+  if (STRUCTURE_IMAGE_MAP[lower]) return STRUCTURE_IMAGE_MAP[lower];
+
+  const clean = lower.replace(/[\s\-_]+/g, '');
+
+  if (clean.includes('launch') || clean.includes('pad') || clean.includes('starship') || clean.includes('landing')) {
+    return STRUCTURE_IMAGE_MAP.LAUNCHING_PAD;
+  }
+  if (clean.includes('command') || clean.includes('core') || clean.includes('hub')) {
+    return STRUCTURE_IMAGE_MAP.COMMAND_CORE;
+  }
+  if (clean.includes('solar') || clean.includes('heliostat')) {
+    return STRUCTURE_IMAGE_MAP.SOLAR_ARRAY;
+  }
+  if (clean.includes('greenhouse') || clean.includes('biodome') || clean.includes('cea') || clean.includes('agri')) {
+    return STRUCTURE_IMAGE_MAP.CEA_GREENHOUSE;
+  }
+  if (clean.includes('research') || clean.includes('lab') || clean.includes('centre') || clean.includes('center') || clean.includes('science')) {
+    return STRUCTURE_IMAGE_MAP.RESEARCH_CENTRE;
+  }
+  if (clean.includes('power') || clean.includes('fission') || clean.includes('reactor') || clean.includes('station')) {
+    return STRUCTURE_IMAGE_MAP.POWER_SYSTEM;
+  }
+  if (clean.includes('hab') || clean.includes('quarter') || clean.includes('crew')) {
+    return STRUCTURE_IMAGE_MAP.HABITAT;
+  }
+  if (clean.includes('water') || clean.includes('well') || clean.includes('extractor') || clean.includes('extract')) {
+    return STRUCTURE_IMAGE_MAP.WATER_EXTRACTION;
+  }
+  if (clean.includes('mining') || clean.includes('auger') || clean.includes('excavat')) {
+    return STRUCTURE_IMAGE_MAP.AUTOMATED_MINING;
+  }
+  if (clean.includes('oxygen') || clean.includes('moxie') || clean.includes('o2')) {
+    return STRUCTURE_IMAGE_MAP.OXYGEN_GENERATION;
+  }
+  if (clean.includes('depot') || clean.includes('deposit')) {
+    return STRUCTURE_IMAGE_MAP.STORAGE_DEPOT;
+  }
+  if (clean.includes('storage') || clean.includes('battery')) {
+    return STRUCTURE_IMAGE_MAP.STORAGE;
+  }
+
+  return STRUCTURE_IMAGE_MAP.CEA_GREENHOUSE;
+}
+
 export const FACILITY_CONFIG = {
   greenhouse: {
     id: 'greenhouse',
+    type: 'CEA_GREENHOUSE',
     category: 'AGRICULTURE',
     title: 'CEA BIO-DOME',
     subtitle: 'Controlled Environment Agriculture',
@@ -17,6 +131,7 @@ export const FACILITY_CONFIG = {
     phase: 'PHASE 4',
     phaseSub: 'EXPANDED',
     accentColor: '#10b981',
+    image: STRUCTURE_IMAGE_MAP.CEA_GREENHOUSE,
     metricPercent: 86,
     metricLabel: 'PRODUCTION RATE',
     graphLabel: 'OUTPUT (kg / Sol)',
@@ -31,44 +146,12 @@ export const FACILITY_CONFIG = {
     ],
     efficiency: 96,
     nextLabel: 'NEXT OUTPUT',
-    nextValue: 'In 6 Sols',
-    previewSvg: `
-      <svg viewBox="0 0 140 85" width="130" height="78" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="gh-glass" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#34d399" stop-opacity="0.85"/>
-            <stop offset="60%" stop-color="#059669" stop-opacity="0.7"/>
-            <stop offset="100%" stop-color="#047857" stop-opacity="0.9"/>
-          </linearGradient>
-          <linearGradient id="gh-base" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#475569"/>
-            <stop offset="100%" stop-color="#1e293b"/>
-          </linearGradient>
-        </defs>
-        <!-- Ground foundation slab -->
-        <polygon points="70,12 132,45 68,78 6,45" fill="url(#gh-base)" stroke="#64748b" stroke-width="1.2" opacity="0.9"/>
-        <!-- Rear Bio-dome -->
-        <g transform="translate(18, -4)">
-          <path d="M42,28 C42,16 66,10 82,18 C98,26 102,40 102,46 L62,56 Z" fill="url(#gh-glass)" stroke="#e2e8f0" stroke-width="0.9"/>
-          <path d="M42,28 C50,22 72,14 82,18" stroke="#ffffff" stroke-width="1.2" opacity="0.6"/>
-          <path d="M52,35 C62,26 80,22 88,27" stroke="#ffffff" stroke-width="0.8" opacity="0.5"/>
-        </g>
-        <!-- Front Bio-dome -->
-        <g transform="translate(-4, 10)">
-          <path d="M42,28 C42,16 66,10 82,18 C98,26 102,40 102,46 L62,56 Z" fill="url(#gh-glass)" stroke="#e2e8f0" stroke-width="1.1"/>
-          <!-- Vault ribs -->
-          <path d="M42,28 C50,22 72,14 82,18" stroke="#ffffff" stroke-width="1.4" opacity="0.75"/>
-          <path d="M52,35 C62,26 80,22 88,27" stroke="#ffffff" stroke-width="1" opacity="0.6"/>
-          <path d="M62,42 C72,33 90,29 98,34" stroke="#ffffff" stroke-width="0.8" opacity="0.4"/>
-          <!-- Entrance airlock block -->
-          <polygon points="40,32 50,27 50,42 40,47" fill="#cbd5e1" stroke="#475569" stroke-width="0.8"/>
-        </g>
-      </svg>
-    `
+    nextValue: 'In 6 Sols'
   },
 
   habitat: {
     id: 'habitat',
+    type: 'HABITAT',
     category: 'HABITATION',
     title: 'CREW HABITAT',
     subtitle: 'Life Support & Living Quarters',
@@ -79,6 +162,7 @@ export const FACILITY_CONFIG = {
     phase: 'PHASE 3',
     phaseSub: 'EXPANDED',
     accentColor: '#06b6d4',
+    image: STRUCTURE_IMAGE_MAP.HABITAT,
     metricPercent: 94,
     metricLabel: 'HABITABILITY',
     graphLabel: 'OCCUPANCY & HEALTH',
@@ -93,39 +177,12 @@ export const FACILITY_CONFIG = {
     ],
     efficiency: 98,
     nextLabel: 'CREW ROTATION',
-    nextValue: 'In 4 Sols',
-    previewSvg: `
-      <svg viewBox="0 0 140 85" width="130" height="78" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="hab-white" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#f8fafc"/>
-            <stop offset="60%" stop-color="#cbd5e1"/>
-            <stop offset="100%" stop-color="#64748b"/>
-          </linearGradient>
-          <linearGradient id="hab-accent" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#06b6d4"/>
-            <stop offset="100%" stop-color="#0891b2"/>
-          </linearGradient>
-        </defs>
-        <!-- Ground slab -->
-        <polygon points="70,12 130,45 68,78 8,45" fill="#1e293b" stroke="#475569" stroke-width="1.2"/>
-        <!-- Central Primary Dome -->
-        <circle cx="68" cy="42" r="22" fill="url(#hab-white)" stroke="#94a3b8" stroke-width="1"/>
-        <circle cx="68" cy="42" r="16" fill="url(#hab-accent)" opacity="0.85"/>
-        <circle cx="64" cy="38" r="6" fill="#ffffff" opacity="0.5"/>
-        <!-- Satellite Modules -->
-        <circle cx="38" cy="34" r="12" fill="url(#hab-white)" stroke="#94a3b8" stroke-width="1"/>
-        <line x1="48" y1="38" x2="56" y2="40" stroke="#cbd5e1" stroke-width="4"/>
-        <circle cx="98" cy="46" r="13" fill="url(#hab-white)" stroke="#94a3b8" stroke-width="1"/>
-        <line x1="82" y1="44" x2="88" y2="45" stroke="#cbd5e1" stroke-width="4"/>
-        <circle cx="58" cy="62" r="10" fill="url(#hab-white)" stroke="#94a3b8" stroke-width="1"/>
-        <line x1="62" y1="54" x2="60" y2="58" stroke="#cbd5e1" stroke-width="3.5"/>
-      </svg>
-    `
+    nextValue: 'In 4 Sols'
   },
 
   power: {
     id: 'power',
+    type: 'POWER_SYSTEM',
     category: 'POWER SYSTEMS',
     title: 'FISSION POWER STATION',
     subtitle: 'Compact Nuclear Reactor Array',
@@ -136,6 +193,7 @@ export const FACILITY_CONFIG = {
     phase: 'PHASE 3',
     phaseSub: 'ONLINE',
     accentColor: '#f59e0b',
+    image: STRUCTURE_IMAGE_MAP.POWER_SYSTEM,
     metricPercent: 92,
     metricLabel: 'CORE OUTPUT',
     graphLabel: 'GENERATION (kW)',
@@ -150,33 +208,12 @@ export const FACILITY_CONFIG = {
     ],
     efficiency: 94,
     nextLabel: 'NEXT SERVICE',
-    nextValue: 'In 14 Sols',
-    previewSvg: `
-      <svg viewBox="0 0 140 85" width="130" height="78" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="pwr-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#f59e0b"/>
-            <stop offset="100%" stop-color="#b45309"/>
-          </linearGradient>
-        </defs>
-        <polygon points="70,12 130,45 68,78 8,45" fill="#1e293b" stroke="#475569" stroke-width="1.2"/>
-        <!-- Reactor Housing -->
-        <polygon points="50,28 78,16 94,26 66,38" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1"/>
-        <polygon points="50,28 66,38 66,60 50,50" fill="#94a3b8"/>
-        <polygon points="66,38 94,26 94,48 66,60" fill="#64748b"/>
-        <!-- Glowing Core Core Conduit -->
-        <circle cx="72" cy="30" r="7" fill="url(#pwr-grad)"/>
-        <circle cx="72" cy="30" r="3.5" fill="#fef08a"/>
-        <!-- Radiator Fins -->
-        <line x1="98" y1="36" x2="114" y2="45" stroke="#f59e0b" stroke-width="2.5"/>
-        <line x1="100" y1="42" x2="116" y2="51" stroke="#f59e0b" stroke-width="2.5"/>
-        <line x1="102" y1="48" x2="118" y2="57" stroke="#f59e0b" stroke-width="2.5"/>
-      </svg>
-    `
+    nextValue: 'In 14 Sols'
   },
 
   water: {
     id: 'water',
+    type: 'WATER_EXTRACTION',
     category: 'WATER SYSTEMS',
     title: 'WATER EXTRACTOR',
     subtitle: 'Subsurface Glacial Well & Purifier',
@@ -187,6 +224,7 @@ export const FACILITY_CONFIG = {
     phase: 'PHASE 2',
     phaseSub: 'EXPANDED',
     accentColor: '#0284c7',
+    image: STRUCTURE_IMAGE_MAP.WATER_EXTRACTION,
     metricPercent: 88,
     metricLabel: 'EXTRACTION RATE',
     graphLabel: 'PURIFIED WATER (L / Sol)',
@@ -201,33 +239,12 @@ export const FACILITY_CONFIG = {
     ],
     efficiency: 89,
     nextLabel: 'NEXT FILTER SERVICE',
-    nextValue: 'In 9 Sols',
-    previewSvg: `
-      <svg viewBox="0 0 140 85" width="130" height="78" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="wat-cyl" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#38bdf8"/>
-            <stop offset="50%" stop-color="#0284c7"/>
-            <stop offset="100%" stop-color="#0369a1"/>
-          </linearGradient>
-        </defs>
-        <polygon points="70,12 130,45 68,78 8,45" fill="#1e293b" stroke="#475569" stroke-width="1.2"/>
-        <!-- Rig Mast Structure -->
-        <line x1="68" y1="18" x2="68" y2="58" stroke="#e2e8f0" stroke-width="3"/>
-        <polygon points="68,16 62,32 74,32" fill="#38bdf8"/>
-        <line x1="56" y1="52" x2="68" y2="30" stroke="#94a3b8" stroke-width="1.5"/>
-        <line x1="80" y1="52" x2="68" y2="30" stroke="#94a3b8" stroke-width="1.5"/>
-        <!-- Storage Condensation Tanks -->
-        <rect x="36" y="38" width="14" height="20" rx="4" fill="url(#wat-cyl)" stroke="#7dd3fc" stroke-width="0.8"/>
-        <rect x="86" y="38" width="14" height="20" rx="4" fill="url(#wat-cyl)" stroke="#7dd3fc" stroke-width="0.8"/>
-        <!-- Conduit lines -->
-        <path d="M50,48 Q60,54 68,54 T86,48" stroke="#38bdf8" stroke-width="1.4" fill="none"/>
-      </svg>
-    `
+    nextValue: 'In 9 Sols'
   },
 
   research_lab: {
     id: 'research_lab',
+    type: 'RESEARCH_CENTRE',
     category: 'RESEARCH',
     title: 'RESEARCH LABORATORY',
     subtitle: 'Astrobiology & Materials Science',
@@ -238,6 +255,7 @@ export const FACILITY_CONFIG = {
     phase: 'PHASE 2',
     phaseSub: 'ANALYSIS',
     accentColor: '#a855f7',
+    image: STRUCTURE_IMAGE_MAP.RESEARCH_CENTRE,
     metricPercent: 79,
     metricLabel: 'DISCOVERY RATE',
     graphLabel: 'RESEARCH POINTS (RP / Sol)',
@@ -252,29 +270,12 @@ export const FACILITY_CONFIG = {
     ],
     efficiency: 91,
     nextLabel: 'NEXT BREAKTHROUGH',
-    nextValue: 'In 8 Sols',
-    previewSvg: `
-      <svg viewBox="0 0 140 85" width="130" height="78" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="res-dish" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#c084fc"/>
-            <stop offset="100%" stop-color="#7e22ce"/>
-          </linearGradient>
-        </defs>
-        <polygon points="70,12 130,45 68,78 8,45" fill="#1e293b" stroke="#475569" stroke-width="1.2"/>
-        <!-- Lab Hexagonal Complex -->
-        <polygon points="46,36 68,24 90,36 90,56 68,68 46,56" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
-        <circle cx="68" cy="46" r="10" fill="url(#res-dish)" opacity="0.85"/>
-        <!-- Uplink Dish on Gantry -->
-        <ellipse cx="68" cy="22" rx="14" ry="7" fill="#e2e8f0" stroke="#a855f7" stroke-width="1.2"/>
-        <line x1="68" y1="22" x2="68" y2="13" stroke="#c084fc" stroke-width="1.8"/>
-        <circle cx="68" cy="12" r="2" fill="#f0abfc"/>
-      </svg>
-    `
+    nextValue: 'In 8 Sols'
   },
 
   rocket: {
     id: 'rocket',
+    type: 'LAUNCHING_PAD',
     category: 'LOGISTICS',
     title: 'LANDING ZONE',
     subtitle: 'Starship Pad & Surface Cargo Port',
@@ -285,6 +286,7 @@ export const FACILITY_CONFIG = {
     phase: 'PHASE 4',
     phaseSub: 'READY',
     accentColor: '#f97316',
+    image: STRUCTURE_IMAGE_MAP.LAUNCHING_PAD,
     metricPercent: 100,
     metricLabel: 'PAD READINESS',
     graphLabel: 'CARGO CAPACITY (Tons)',
@@ -299,31 +301,12 @@ export const FACILITY_CONFIG = {
     ],
     efficiency: 100,
     nextLabel: 'NEXT SHIP ARRIVAL',
-    nextValue: 'In 12 Sols',
-    previewSvg: `
-      <svg viewBox="0 0 140 85" width="130" height="78" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="pad-grad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#334155"/>
-            <stop offset="100%" stop-color="#0f172a"/>
-          </linearGradient>
-        </defs>
-        <!-- Circular Landing Pad Surface -->
-        <ellipse cx="68" cy="50" rx="46" ry="24" fill="url(#pad-grad)" stroke="#f97316" stroke-width="1.4"/>
-        <ellipse cx="68" cy="50" rx="30" ry="15" fill="none" stroke="#fdba74" stroke-width="0.9" stroke-dasharray="3 3"/>
-        <circle cx="68" cy="50" r="6" fill="#f97316" opacity="0.3"/>
-        <!-- Starship Rocket Vehicle -->
-        <path d="M68,14 C65,22 62,38 62,50 L74,50 C74,38 71,22 68,14 Z" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
-        <polygon points="62,42 56,52 62,50" fill="#94a3b8"/>
-        <polygon points="74,42 80,52 74,50" fill="#94a3b8"/>
-        <path d="M66,50 L68,58 L70,50 Z" fill="#f97316" opacity="0.8"/>
-      </svg>
-    `
+    nextValue: 'In 12 Sols'
   },
 
-  // Fallback / standard mappings for other colony structures
   solar: {
     id: 'solar',
+    type: 'SOLAR_ARRAY',
     category: 'POWER SYSTEMS',
     title: 'SOLAR POWER ARRAY',
     subtitle: 'Photovoltaic Heliostat Farm',
@@ -334,6 +317,7 @@ export const FACILITY_CONFIG = {
     phase: 'PHASE 3',
     phaseSub: 'TRACKING',
     accentColor: '#f59e0b',
+    image: STRUCTURE_IMAGE_MAP.SOLAR_ARRAY,
     metricPercent: 88,
     metricLabel: 'PEAK SUNLIGHT',
     graphLabel: 'OUTPUT (kW)',
@@ -348,25 +332,12 @@ export const FACILITY_CONFIG = {
     ],
     efficiency: 92,
     nextLabel: 'DUSK SHUTOFF',
-    nextValue: 'In 5 Hours',
-    previewSvg: `
-      <svg viewBox="0 0 140 85" width="130" height="78" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <polygon points="70,12 130,45 68,78 8,45" fill="#1e293b" stroke="#475569" stroke-width="1.2"/>
-        <!-- Solar Panels Array -->
-        <g transform="translate(30, 20)">
-          <polygon points="10,12 36,4 46,16 20,24" fill="#0284c7" stroke="#38bdf8" stroke-width="1"/>
-          <line x1="20" y1="24" x2="20" y2="34" stroke="#94a3b8" stroke-width="2"/>
-        </g>
-        <g transform="translate(58, 28)">
-          <polygon points="10,12 36,4 46,16 20,24" fill="#0284c7" stroke="#38bdf8" stroke-width="1"/>
-          <line x1="20" y1="24" x2="20" y2="34" stroke="#94a3b8" stroke-width="2"/>
-        </g>
-      </svg>
-    `
+    nextValue: 'In 5 Hours'
   },
 
   oxygen: {
     id: 'oxygen',
+    type: 'OXYGEN_GENERATION',
     category: 'LIFE SUPPORT',
     title: 'MOXIE OXYGEN PLANT',
     subtitle: 'CO2 Solid Oxide Electrolysis',
@@ -377,6 +348,7 @@ export const FACILITY_CONFIG = {
     phase: 'PHASE 3',
     phaseSub: 'REFINING',
     accentColor: '#10b981',
+    image: STRUCTURE_IMAGE_MAP.OXYGEN_GENERATION,
     metricPercent: 91,
     metricLabel: 'ELECTROLYSIS',
     graphLabel: 'O2 YIELD (kg / Sol)',
@@ -391,19 +363,12 @@ export const FACILITY_CONFIG = {
     ],
     efficiency: 95,
     nextLabel: 'FILTER CYCLING',
-    nextValue: 'In 7 Sols',
-    previewSvg: `
-      <svg viewBox="0 0 140 85" width="130" height="78" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <polygon points="70,12 130,45 68,78 8,45" fill="#1e293b" stroke="#475569" stroke-width="1.2"/>
-        <rect x="52" y="30" width="36" height="28" rx="4" fill="#f8fafc" stroke="#94a3b8" stroke-width="1"/>
-        <circle cx="70" cy="44" r="8" fill="#10b981" opacity="0.8"/>
-        <line x1="70" y1="22" x2="70" y2="30" stroke="#34d399" stroke-width="3"/>
-      </svg>
-    `
+    nextValue: 'In 7 Sols'
   },
 
   central_hub: {
     id: 'central_hub',
+    type: 'COMMAND_CORE',
     category: 'OPERATIONS',
     title: 'CENTRAL COMMAND CORE',
     subtitle: 'Mission Telemetry & AI Systems',
@@ -414,6 +379,7 @@ export const FACILITY_CONFIG = {
     phase: 'PHASE 4',
     phaseSub: 'ONLINE',
     accentColor: '#06b6d4',
+    image: STRUCTURE_IMAGE_MAP.COMMAND_CORE,
     metricPercent: 99,
     metricLabel: 'GRID UPTIME',
     graphLabel: 'TELEMETRY LOAD',
@@ -428,19 +394,12 @@ export const FACILITY_CONFIG = {
     ],
     efficiency: 99,
     nextLabel: 'AI SYNC CYCLE',
-    nextValue: 'In 2 Sols',
-    previewSvg: `
-      <svg viewBox="0 0 140 85" width="130" height="78" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <polygon points="70,12 130,45 68,78 8,45" fill="#1e293b" stroke="#475569" stroke-width="1.2"/>
-        <polygon points="68,20 96,36 96,56 68,72 40,56 40,36" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
-        <circle cx="68" cy="46" r="12" fill="#06b6d4" opacity="0.85"/>
-        <line x1="68" y1="20" x2="68" y2="10" stroke="#38bdf8" stroke-width="2"/>
-      </svg>
-    `
+    nextValue: 'In 2 Sols'
   },
 
   mining: {
     id: 'mining',
+    type: 'AUTOMATED_MINING',
     category: 'LOGISTICS',
     title: 'REGOLITH MINING AUGER',
     subtitle: 'Automated Excavation System',
@@ -451,6 +410,7 @@ export const FACILITY_CONFIG = {
     phase: 'PHASE 2',
     phaseSub: 'DIGGING',
     accentColor: '#d97706',
+    image: STRUCTURE_IMAGE_MAP.AUTOMATED_MINING,
     metricPercent: 82,
     metricLabel: 'EXCAVATION YIELD',
     graphLabel: 'REGOLITH (Tons / Sol)',
@@ -465,18 +425,12 @@ export const FACILITY_CONFIG = {
     ],
     efficiency: 88,
     nextLabel: 'BIN DUMP CYCLE',
-    nextValue: 'In 3 Sols',
-    previewSvg: `
-      <svg viewBox="0 0 140 85" width="130" height="78" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <polygon points="70,12 130,45 68,78 8,45" fill="#1e293b" stroke="#475569" stroke-width="1.2"/>
-        <polygon points="50,42 74,28 92,38 68,52" fill="#d97706" stroke="#b45309" stroke-width="1"/>
-        <line x1="72" y1="36" x2="108" y2="58" stroke="#f59e0b" stroke-width="4"/>
-      </svg>
-    `
+    nextValue: 'In 3 Sols'
   },
 
   storage_depot: {
     id: 'storage_depot',
+    type: 'STORAGE_DEPOT',
     category: 'RESOURCE STORAGE',
     title: 'STORAGE DEPOT',
     subtitle: 'COLONY RESOURCE STORAGE',
@@ -487,6 +441,7 @@ export const FACILITY_CONFIG = {
     phase: 'PHASE 3',
     phaseSub: 'STORAGE BUFFER',
     accentColor: '#38bdf8',
+    image: STRUCTURE_IMAGE_MAP.STORAGE_DEPOT,
     metricPercent: 78,
     metricLabel: 'STORED CAPACITY',
     graphLabel: 'STORED VOLUME (Tons)',
@@ -501,32 +456,12 @@ export const FACILITY_CONFIG = {
     ],
     efficiency: 94,
     nextLabel: 'INVENTORY AUDIT',
-    nextValue: 'In 5 Sols',
-    previewSvg: `
-      <svg viewBox="0 0 140 85" width="130" height="78" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="depot-hull" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#0284c7"/>
-            <stop offset="100%" stop-color="#0369a1"/>
-          </linearGradient>
-        </defs>
-        <polygon points="70,12 130,45 68,78 8,45" fill="#1e293b" stroke="#475569" stroke-width="1.2"/>
-        <!-- Main Storage Hangar Body -->
-        <polygon points="40,38 70,22 100,38 100,60 70,72 40,60" fill="url(#depot-hull)" stroke="#38bdf8" stroke-width="1.2"/>
-        <line x1="70" y1="22" x2="70" y2="72" stroke="#7dd3fc" stroke-width="1.4"/>
-        <line x1="40" y1="38" x2="70" y2="48" stroke="#7dd3fc" stroke-width="1"/>
-        <line x1="100" y1="38" x2="70" y2="48" stroke="#7dd3fc" stroke-width="1"/>
-        <!-- Gantry Crane Track -->
-        <rect x="58" y="30" width="24" height="6" rx="1" fill="#f8fafc" stroke="#94a3b8" stroke-width="0.8"/>
-        <!-- Cargo Pallets -->
-        <polygon points="28,52 38,46 48,52 38,58" fill="#fbbf24" opacity="0.85"/>
-        <polygon points="92,54 102,48 112,54 102,60" fill="#34d399" opacity="0.85"/>
-      </svg>
-    `
+    nextValue: 'In 5 Sols'
   },
 
   battery: {
     id: 'battery',
+    type: 'STORAGE',
     category: 'POWER SYSTEMS',
     title: 'ENERGY STORAGE',
     subtitle: 'BATTERY STORAGE ARRAY',
@@ -537,6 +472,7 @@ export const FACILITY_CONFIG = {
     phase: 'PHASE 3',
     phaseSub: 'GRID BUFFER',
     accentColor: '#f59e0b',
+    image: STRUCTURE_IMAGE_MAP.STORAGE,
     metricPercent: 96,
     metricLabel: 'CHARGE LEVEL',
     graphLabel: 'GRID BUFFER (kWh)',
@@ -551,31 +487,38 @@ export const FACILITY_CONFIG = {
     ],
     efficiency: 96,
     nextLabel: 'CELL BALANCING',
-    nextValue: 'Continuous',
-    previewSvg: `
-      <svg viewBox="0 0 140 85" width="130" height="78" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="bat-cell" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#f59e0b"/>
-            <stop offset="100%" stop-color="#d97706"/>
-          </linearGradient>
-        </defs>
-        <polygon points="70,12 130,45 68,78 8,45" fill="#1e293b" stroke="#475569" stroke-width="1.2"/>
-        <!-- Battery Enclosure Base -->
-        <polygon points="42,32 78,20 102,32 66,48" fill="#334155" stroke="#64748b" stroke-width="1"/>
-        <!-- Cell 1 -->
-        <rect x="46" y="36" width="12" height="24" rx="2" fill="url(#bat-cell)" stroke="#fef08a" stroke-width="0.8"/>
-        <line x1="52" y1="33" x2="52" y2="36" stroke="#fbbf24" stroke-width="2"/>
-        <!-- Cell 2 -->
-        <rect x="64" y="36" width="12" height="24" rx="2" fill="url(#bat-cell)" stroke="#fef08a" stroke-width="0.8"/>
-        <line x1="70" y1="33" x2="70" y2="36" stroke="#fbbf24" stroke-width="2"/>
-        <!-- Cell 3 -->
-        <rect x="82" y="36" width="12" height="24" rx="2" fill="url(#bat-cell)" stroke="#fef08a" stroke-width="0.8"/>
-        <line x1="88" y1="33" x2="88" y2="36" stroke="#fbbf24" stroke-width="2"/>
-        <!-- Bus connector busbar -->
-        <line x1="46" y1="32" x2="94" y2="32" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round"/>
-      </svg>
-    `
+    nextValue: 'Continuous'
+  },
+
+  storage: {
+    id: 'storage',
+    type: 'STORAGE',
+    category: 'RESOURCE STORAGE',
+    title: 'STORAGE',
+    subtitle: 'COLONY BUFFER VAULT',
+    description: 'Automated colony storage facility managing strategic reserves, structural components, and buffered supplies.',
+    sector: 'SECTOR ZETA',
+    status: 'OPERATIONAL',
+    condition: 'OPTIMAL',
+    phase: 'PHASE 3',
+    phaseSub: 'STORAGE BUFFER',
+    accentColor: '#38bdf8',
+    image: STRUCTURE_IMAGE_MAP.STORAGE,
+    metricPercent: 85,
+    metricLabel: 'STORAGE LEVEL',
+    graphLabel: 'BUFFER CAPACITY (%)',
+    graphChange: '+6%',
+    graphPoints: [70, 72, 75, 78, 80, 82, 84, 85],
+    graphYLabels: ['100', '80', '60', '40', '0'],
+    resources: [
+      { name: 'SUPPLIES', value: '450 Tons', type: 'Buffer', icon: 'cargo', color: '#38bdf8' },
+      { name: 'PARTS', value: '88% Stock', type: 'Modular', icon: 'tools', color: '#34d399' },
+      { name: 'CAPACITY', value: '500 Tons', type: 'Max Vault', icon: 'filter', color: '#cbd5e1' },
+      { name: 'ENERGY', value: '-2 kW', type: 'Climate', icon: 'energy', color: '#f59e0b' }
+    ],
+    efficiency: 95,
+    nextLabel: 'AUDIT CYCLE',
+    nextValue: 'In 3 Sols'
   }
 };
 
@@ -584,5 +527,35 @@ export const FACILITY_CONFIG = {
  * Can easily be swapped with `fetch('/api/facilities/' + id)` or Java backend.
  */
 export function getFacilityProfile(id) {
-  return FACILITY_CONFIG[id] || FACILITY_CONFIG['greenhouse'];
+  if (!id) return FACILITY_CONFIG.greenhouse;
+
+  if (typeof id === 'object') {
+    return getFacilityProfile(id.id || id.type || id.title || id.name);
+  }
+
+  const raw = String(id).trim().toLowerCase();
+  if (FACILITY_CONFIG[raw]) return FACILITY_CONFIG[raw];
+
+  const norm = raw.replace(/[\s\-_]+/g, '');
+
+  for (const [k, v] of Object.entries(FACILITY_CONFIG)) {
+    if (k.replace(/[\s\-_]+/g, '') === norm) return v;
+    if (v.title && v.title.toLowerCase().replace(/[\s\-_]+/g, '') === norm) return v;
+    if (v.type && v.type.toLowerCase().replace(/[\s\-_]+/g, '') === norm) return v;
+  }
+
+  if (norm.includes('launch') || norm.includes('pad') || norm.includes('starship') || norm.includes('landing')) return FACILITY_CONFIG.rocket;
+  if (norm.includes('command') || norm.includes('core') || norm.includes('hub')) return FACILITY_CONFIG.central_hub;
+  if (norm.includes('solar') || norm.includes('heliostat')) return FACILITY_CONFIG.solar;
+  if (norm.includes('greenhouse') || norm.includes('biodome') || norm.includes('cea') || norm.includes('agri')) return FACILITY_CONFIG.greenhouse;
+  if (norm.includes('research') || norm.includes('lab') || norm.includes('centre') || norm.includes('center') || norm.includes('science')) return FACILITY_CONFIG.research_lab;
+  if (norm.includes('fission') || norm.includes('power') || norm.includes('reactor') || norm.includes('station')) return FACILITY_CONFIG.power;
+  if (norm.includes('hab') || norm.includes('quarter') || norm.includes('crew')) return FACILITY_CONFIG.habitat;
+  if (norm.includes('water') || norm.includes('well') || norm.includes('extractor') || norm.includes('extract')) return FACILITY_CONFIG.water;
+  if (norm.includes('mining') || norm.includes('auger') || norm.includes('excavat')) return FACILITY_CONFIG.mining;
+  if (norm.includes('oxygen') || norm.includes('moxie') || norm.includes('o2')) return FACILITY_CONFIG.oxygen;
+  if (norm.includes('deposit') || norm.includes('depot')) return FACILITY_CONFIG.storage_depot;
+  if (norm.includes('battery') || norm.includes('storage')) return FACILITY_CONFIG.storage;
+
+  return FACILITY_CONFIG[id] || FACILITY_CONFIG.greenhouse;
 }

@@ -1,3 +1,5 @@
+import { STRUCTURE_IMAGE_MAP } from '../data/FacilityConfig.js';
+
 /**
  * ColonyData — Registry of major colony structures identified directly from the GLB hierarchy.
  * Formatted for premium futuristic colony management interface (NASA / Frostpunk / Surviving Mars aesthetic).
@@ -54,16 +56,7 @@ export const COLONY_STRUCTURES = {
       { label: 'CO₂ Level', value: '1,200 ppm' },
       { label: 'Canopy Health', value: '98%' }
     ],
-    blueprintSvg: `<svg viewBox="0 0 100 80" fill="none" stroke="currentColor" stroke-width="1.5">
-      <path d="M10 70 C 10 30, 90 30, 90 70 Z" stroke-dasharray="2 2" opacity="0.3"/>
-      <path d="M20 70 C 20 40, 80 40, 80 70 Z" stroke-width="2"/>
-      <line x1="50" y1="40" x2="50" y2="70"/>
-      <line x1="32" y1="48" x2="38" y2="70"/>
-      <line x1="68" y1="48" x2="62" y2="70"/>
-      <circle cx="50" cy="54" r="5" stroke-width="1.5"/>
-      <path d="M50 49 Q 53 45 55 49 Q 52 53 50 49" fill="currentColor" opacity="0.6"/>
-      <line x1="5" y1="70" x2="95" y2="70" stroke-width="2"/>
-    </svg>`
+    image: STRUCTURE_IMAGE_MAP.CEA_GREENHOUSE
   },
 
   habitat: {
@@ -112,15 +105,7 @@ export const COLONY_STRUCTURES = {
       { label: 'O₂ Mix', value: '21.2%' },
       { label: 'Radiation', value: '0.04 mSv/d' }
     ],
-    blueprintSvg: `<svg viewBox="0 0 100 80" fill="none" stroke="currentColor" stroke-width="1.5">
-      <rect x="25" y="32" width="50" height="36" rx="18" stroke-width="2"/>
-      <circle cx="38" cy="50" r="6"/>
-      <circle cx="62" cy="50" r="6"/>
-      <line x1="50" y1="32" x2="50" y2="68" stroke-dasharray="2 2" opacity="0.4"/>
-      <line x1="12" y1="50" x2="25" y2="50" stroke-width="2"/>
-      <line x1="75" y1="50" x2="88" y2="50" stroke-width="2"/>
-      <line x1="5" y1="70" x2="95" y2="70" stroke-width="2"/>
-    </svg>`
+    image: STRUCTURE_IMAGE_MAP.HABITAT
   },
 
   power: {
@@ -168,15 +153,7 @@ export const COLONY_STRUCTURES = {
       { label: 'Coolant Press', value: '1.82 MPa' },
       { label: 'Containment', value: '100% Sealed' }
     ],
-    blueprintSvg: `<svg viewBox="0 0 100 80" fill="none" stroke="currentColor" stroke-width="1.5">
-      <rect x="35" y="30" width="30" height="38" rx="4" stroke-width="2"/>
-      <circle cx="50" cy="49" r="8" stroke-dasharray="3 2"/>
-      <line x1="20" y1="49" x2="35" y2="49" stroke-width="2"/>
-      <line x1="65" y1="49" x2="80" y2="49" stroke-width="2"/>
-      <line x1="30" y1="35" x2="20" y2="25"/>
-      <line x1="70" y1="35" x2="80" y2="25"/>
-      <line x1="5" y1="70" x2="95" y2="70" stroke-width="2"/>
-    </svg>`
+    image: STRUCTURE_IMAGE_MAP.POWER_SYSTEM
   },
 
   water: {
@@ -224,13 +201,7 @@ export const COLONY_STRUCTURES = {
       { label: 'Pump Speed', value: '1,800 RPM' },
       { label: 'Purity Level', value: '99.8%' }
     ],
-    blueprintSvg: `<svg viewBox="0 0 100 80" fill="none" stroke="currentColor" stroke-width="1.5">
-      <rect x="30" y="35" width="40" height="33" rx="4" stroke-width="2"/>
-      <path d="M50 42 C 45 48, 43 52, 50 58 C 57 52, 55 48, 50 42 Z" fill="currentColor" opacity="0.5"/>
-      <path d="M20 50 Q 25 45 30 50" stroke-width="2"/>
-      <path d="M70 50 Q 75 55 80 50" stroke-width="2"/>
-      <line x1="5" y1="70" x2="95" y2="70" stroke-width="2"/>
-    </svg>`
+    image: STRUCTURE_IMAGE_MAP.WATER_EXTRACTION
   },
 
   research_lab: {
@@ -278,14 +249,7 @@ export const COLONY_STRUCTURES = {
       { label: 'Cryo Temp', value: '-80°C' },
       { label: 'Assigned Crew', value: '3 Scientists' }
     ],
-    blueprintSvg: `<svg viewBox="0 0 100 80" fill="none" stroke="currentColor" stroke-width="1.5">
-      <polygon points="50,26 76,41 76,65 50,75 24,65 24,41" stroke-width="2"/>
-      <line x1="50" y1="26" x2="50" y2="75" stroke-dasharray="2 2" opacity="0.4"/>
-      <line x1="24" y1="41" x2="76" y2="65" opacity="0.2"/>
-      <line x1="76" y1="41" x2="24" y2="65" opacity="0.2"/>
-      <circle cx="50" cy="50" r="8" stroke-width="1.5"/>
-      <line x1="5" y1="75" x2="95" y2="75" stroke-width="2"/>
-    </svg>`
+    image: STRUCTURE_IMAGE_MAP.RESEARCH_CENTRE
   },
 
   rocket: {
@@ -333,14 +297,7 @@ export const COLONY_STRUCTURES = {
       { label: 'Pad Deflection', value: '0.01°' },
       { label: 'Cryo Line Temp', value: '98 K' }
     ],
-    blueprintSvg: `<svg viewBox="0 0 100 80" fill="none" stroke="currentColor" stroke-width="1.5">
-      <ellipse cx="50" cy="65" rx="38" ry="8" stroke-width="1.5" stroke-dasharray="3 2"/>
-      <path d="M50 18 L58 52 L42 52 Z" stroke-width="2"/>
-      <line x1="50" y1="18" x2="50" y2="52" stroke-dasharray="2 2" opacity="0.4"/>
-      <path d="M42 45 L34 56 L42 52 Z" fill="currentColor" opacity="0.3"/>
-      <path d="M58 45 L66 56 L58 52 Z" fill="currentColor" opacity="0.3"/>
-      <line x1="5" y1="70" x2="95" y2="70" stroke-width="2"/>
-    </svg>`
+    image: STRUCTURE_IMAGE_MAP.LAUNCHING_PAD
   },
 
   solar: {
@@ -388,13 +345,7 @@ export const COLONY_STRUCTURES = {
       { label: 'Azimuth Angle', value: '142°' },
       { label: 'Dust Layer', value: '2.1%' }
     ],
-    blueprintSvg: `<svg viewBox="0 0 100 80" fill="none" stroke="currentColor" stroke-width="1.5">
-      <line x1="50" y1="45" x2="50" y2="70" stroke-width="3"/>
-      <polygon points="20,40 50,30 80,40 50,50" stroke-width="2" fill="currentColor" fill-opacity="0.1"/>
-      <line x1="35" y1="35" x2="35" y2="45"/>
-      <line x1="65" y1="35" x2="65" y2="45"/>
-      <line x1="5" y1="70" x2="95" y2="70" stroke-width="2"/>
-    </svg>`
+    image: STRUCTURE_IMAGE_MAP.SOLAR_ARRAY
   },
 
   central_hub: {
@@ -442,13 +393,7 @@ export const COLONY_STRUCTURES = {
       { label: 'Clock Speed', value: '4.8 GHz' },
       { label: 'Core Temp', value: '42°C' }
     ],
-    blueprintSvg: `<svg viewBox="0 0 100 80" fill="none" stroke="currentColor" stroke-width="1.5">
-      <circle cx="50" cy="45" r="20" stroke-width="2"/>
-      <circle cx="50" cy="45" r="8"/>
-      <line x1="50" y1="20" x2="50" y2="10" stroke-width="2"/>
-      <line x1="42" y1="12" x2="58" y2="12" stroke-width="1.5"/>
-      <line x1="5" y1="70" x2="95" y2="70" stroke-width="2"/>
-    </svg>`
+    image: STRUCTURE_IMAGE_MAP.COMMAND_CORE
   },
 
   oxygen: {
@@ -496,14 +441,7 @@ export const COLONY_STRUCTURES = {
       { label: 'Gas Purity', value: '99.7%' },
       { label: 'Cathode V', value: '1.42 V' }
     ],
-    blueprintSvg: `<svg viewBox="0 0 100 80" fill="none" stroke="currentColor" stroke-width="1.5">
-      <circle cx="38" cy="48" r="14" stroke-width="2"/>
-      <circle cx="62" cy="48" r="14" stroke-width="2"/>
-      <line x1="38" y1="48" x2="62" y2="48" stroke-width="3"/>
-      <text x="34" y="52" fill="currentColor" font-size="10" font-family="monospace">O</text>
-      <text x="58" y="52" fill="currentColor" font-size="10" font-family="monospace">O</text>
-      <line x1="5" y1="70" x2="95" y2="70" stroke-width="2"/>
-    </svg>`
+    image: STRUCTURE_IMAGE_MAP.OXYGEN_GENERATION
   },
 
   battery: {
@@ -552,13 +490,7 @@ export const COLONY_STRUCTURES = {
       { label: 'State of Health', value: '99.2%' },
       { label: 'Active Cells', value: '128 / 128' }
     ],
-    blueprintSvg: `<svg viewBox="0 0 100 80" fill="none" stroke="currentColor" stroke-width="1.5">
-      <rect x="25" y="32" width="50" height="36" rx="4" stroke-width="2"/>
-      <line x1="38" y1="32" x2="38" y2="68" stroke-dasharray="2 2"/>
-      <line x1="62" y1="32" x2="62" y2="68" stroke-dasharray="2 2"/>
-      <rect x="42" y="26" width="16" height="6" rx="1" fill="currentColor" opacity="0.5"/>
-      <line x1="5" y1="70" x2="95" y2="70" stroke-width="2"/>
-    </svg>`
+    image: STRUCTURE_IMAGE_MAP.STORAGE
   },
 
   storage_depot: {
@@ -607,13 +539,7 @@ export const COLONY_STRUCTURES = {
       { label: 'Crane State', value: 'Standby' },
       { label: 'Vault Temp', value: '14.2°C' }
     ],
-    blueprintSvg: `<svg viewBox="0 0 100 80" fill="none" stroke="currentColor" stroke-width="1.5">
-      <polygon points="50,22 82,38 82,66 50,75 18,66 18,38" stroke-width="2"/>
-      <line x1="50" y1="22" x2="50" y2="75"/>
-      <line x1="18" y1="38" x2="50" y2="50"/>
-      <line x1="82" y1="38" x2="50" y2="50"/>
-      <line x1="5" y1="75" x2="95" y2="75" stroke-width="2"/>
-    </svg>`
+    image: STRUCTURE_IMAGE_MAP.STORAGE_DEPOT
   },
 
   mining: {
@@ -661,13 +587,6 @@ export const COLONY_STRUCTURES = {
       { label: 'Torque Force', value: '180 Nm' },
       { label: 'Regolith Density', value: '1.65 g/cm³' }
     ],
-    blueprintSvg: `<svg viewBox="0 0 100 80" fill="none" stroke="currentColor" stroke-width="1.5">
-      <line x1="50" y1="20" x2="50" y2="70" stroke-width="3"/>
-      <polygon points="50,74 42,62 58,62" fill="currentColor"/>
-      <line x1="30" y1="35" x2="70" y2="35" stroke-width="2"/>
-      <line x1="35" y1="45" x2="65" y2="45"/>
-      <line x1="40" y1="55" x2="60" y2="55"/>
-      <line x1="5" y1="70" x2="95" y2="70" stroke-width="2"/>
-    </svg>`
+    image: STRUCTURE_IMAGE_MAP.AUTOMATED_MINING
   }
 };

@@ -1677,7 +1677,7 @@ export class InfoOverlay {
     }
 
     // Render the master card HTML using the unified FacilityInspectorRenderer
-    this.dom.panel.innerHTML = FacilityInspectorRenderer.renderFacilityHtml(this.currentStructureId, liveData);
+    this.dom.panel.innerHTML = FacilityInspectorRenderer.renderFacilityHtml(structure, liveData);
 
     // Cache card element references to eliminate 10+ querySelectors per simulation tick
     const card = this.dom.panel.querySelector('.facility-master-card');
