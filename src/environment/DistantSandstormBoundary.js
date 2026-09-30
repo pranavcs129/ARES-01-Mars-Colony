@@ -5,17 +5,24 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
  * DistantSandstormBoundary — Lightweight Distant Atmospheric Boundary Engine.
  * 
  * Purpose:
- * Uses the existing /assets/sandstorm/sandstorm.glb asset as a distant, realistic
- * atmospheric perimeter far outside the colony and playable terrain.
+ * Positions the existing sandstorm.glb asset as a realistic, distant atmospheric dust front
+ * encircling the outer perimeter of the Mars terrain.
  * 
- * Key Characteristics:
- * - Load once, reuse. Zero per-frame object or geometry allocations.
- * - Sits outside the 150x150 colony terrain boundary (r >= 95).
- * - storm_ground_dust is disabled so the colony terrain is 100% uncovered.
- * - Low, wide profile (scaled down in height) blending smoothly into the horizon.
- * - Uses existing 'storm_swirl' animation via THREE.AnimationMixer for slow, majestic atmospheric drift.
- * - Camera zoom-aware: barely visible at normal colony view, seamlessly fades in when zooming out.
- * - Smooth day/sunset/night color grading matching the Martian environment without glowing at night.
+ * Precise Terrain Bounds & Placement:
+ * - Mars Terrain plate: [-75, 75] in X and Z (diameter 150, center at 0, 0, 0).
+ * - Sandstorm Core Wall: sits just outside at radius 76 to 80 units.
+ * - Sandstorm Outer Skirt: extends from 84 to 122 units, concealing the world boundary.
+ * - Sandstorm Inner Haze: stands vertically at radius 58 to 61 units.
+ * - Height: compressed to low & wide profile (span ~17 units, Y from -2.3 to 15.0).
+ * - Ground Decals: storm_ground_dust is disabled so the colony terrain is 100% uncovered.
+ * 
+ * Camera Zoom States:
+ * 1. Normal colony view (frustumSize 24): Storm is 100% off-screen.
+ *    Result: COLONY -> LARGE AMOUNT OF NORMAL MARS TERRAIN.
+ * 2. Medium zoom-out (frustumSize ~45): Faint inner haze wisps subtly appear in far corners.
+ *    Result: COLONY -> OPEN MARS TERRAIN -> SUBTLE DISTANT SANDSTORM.
+ * 3. Maximum zoom-out (frustumSize 75): Distant sandstorm wall is clearly visible framing the horizon.
+ *    Result: COLONY -> OPEN MARS TERRAIN -> DISTANT SANDSTORM HORIZON.
  */
 export class DistantSandstormBoundary {
   constructor(scene, cameraController) {
@@ -25,17 +32,17 @@ export class DistantSandstormBoundary {
 
     this.group = new THREE.Group();
     this.group.name = 'DistantSandstormBoundary';
-    this.group.visible = false; // Initially hidden until loaded
+    this.group.visible = false;
 
     this.mixer = null;
     this.materials = [];
     this.centerPos = new THREE.Vector3(0, 0, 0);
 
-    // Pre-allocated colors for zero-allocation diurnal grading
-    this._currentColor = new THREE.Color();
-    this.dayColor = new THREE.Color(0xb5785a);   // Warm muted Mars dust
-    this.sunsetColor = new THREE.Color(0x9e583c); // Dusk copper
-    this.nightColor = new THREE.Color(0x241d24);  // Deep muted dark mauve/brown
+    // Diurnal color grading (textures unmultiplied in daytime, dimmed at night)
+    this._currentColor = new THREE.Color(0xffffff);
+    this.dayColor = new THREE.Color(0xffffff);     // Full natural texture colors
+    this.sunsetColor = new THREE.Color(0xf6af88); // Warm sunset copper
+    this.nightColor = new THREE.Color(0x3a282c);  // Muted dark mauve at night
 
     this.isLoaded = false;
     this.loadAsset();
@@ -52,45 +59,47 @@ export class DistantSandstormBoundary {
         // Convert Blender Z-up to Three.js Y-up (matching ColonyLoader)
         this.group.rotation.x = -Math.PI / 2;
 
-        // Sits slightly below ground (Y = -2.5) so base skirt sinks beneath the horizon
-        this.group.position.set(0, -2.5, 0);
+        // Anchor slightly below ground (Y = -1.2) so the bottom skirt sinks into the terrain edge
+        this.group.position.set(0, -1.2, 0);
 
-        // Scale: Wide and low, irregular oval (X != Z) to avoid a computer-generated circle
-        // Local X -> World X (1.42), Local Y -> World -Z (1.32), Local Z -> World Y height (0.50)
-        this.group.scale.set(1.42, 1.32, 0.50);
+        // Precise scale calculated from terrain bounds:
+        // Local X -> World X (0.84) -> Core wall at radius 76 - 80 (just outside 75m terrain edge)
+        // Local Y -> World -Z (0.80) -> Core wall at radius 76 - 80
+        // Local Z -> World Y (0.40) -> Height span 17 units (low, wide atmospheric dust wall)
+        this.group.scale.set(0.84, 0.80, 0.40);
 
-        // Configure meshes and materials
+        // Calibrated base opacities: core wall solid enough to block the void, inner haze soft
         const baseOpacities = {
-          storm_core_wall: 0.55,
-          storm_roof: 0.35,
-          storm_outer_skirt: 0.40,
-          storm_layer_far: 0.45,
-          storm_layer_mid: 0.38,
-          storm_layer_haze: 0.28
+          storm_core_wall: 0.88,
+          storm_roof: 0.65,
+          storm_outer_skirt: 0.72,
+          storm_layer_far: 0.78,
+          storm_layer_mid: 0.68,
+          storm_layer_haze: 0.55
         };
 
         stormModel.traverse((child) => {
           if (child.isMesh) {
-            // NEVER cover colony terrain: Disable ground dust decal completely
+            // NEVER cover colony terrain: Disable ground decal plane completely
             if (child.name === 'storm_ground_dust') {
               child.visible = false;
               return;
             }
 
-            // Ensure distance boundary never casts shadows
             child.castShadow = false;
             child.receiveShadow = false;
             child.frustumCulled = true;
 
             const name = child.name || '';
-            const baseOpacity = baseOpacities[name] || 0.40;
+            const baseOpacity = baseOpacities[name] || 0.65;
 
             const mats = Array.isArray(child.material) ? child.material : [child.material];
             mats.forEach((mat) => {
               if (mat) {
                 mat.transparent = true;
-                mat.depthWrite = false; // Prevents z-fighting and preserves foreground colony depth
+                mat.depthWrite = false; // Foreground colony terrain always renders cleanly in front
                 mat.depthTest = true;
+                mat.side = THREE.DoubleSide; // Visible from both inside and outside cylinder
                 mat.userData.baseOpacity = baseOpacity;
                 mat.opacity = baseOpacity;
                 mat.color.copy(this.dayColor);
@@ -98,11 +107,11 @@ export class DistantSandstormBoundary {
               }
             });
 
-            child.renderOrder = -1;
+            child.renderOrder = 1;
           }
         });
 
-        // Initialize slow atmospheric swirling animation if available in GLB
+        // Advance GLB baked swirl animation using THREE.AnimationMixer
         if (gltf.animations && gltf.animations.length > 0) {
           this.mixer = new THREE.AnimationMixer(stormModel);
           const action = this.mixer.clipAction(gltf.animations[0]);
@@ -112,9 +121,8 @@ export class DistantSandstormBoundary {
         this.group.add(stormModel);
         this.scene.add(this.group);
         this.isLoaded = true;
-        this.group.visible = true;
 
-        console.log('🌪️ Distant Sandstorm Boundary loaded & anchored successfully.');
+        console.log('🌪️ Distant Sandstorm Boundary aligned to outer terrain perimeter.');
       },
       undefined,
       (err) => {
@@ -133,30 +141,33 @@ export class DistantSandstormBoundary {
 
     // 1. Advance baked GLB atmospheric swirl animation
     if (this.mixer) {
-      this.mixer.update(delta * 0.85); // Gentle, majestic swirl rate
+      this.mixer.update(delta * 0.85);
     }
 
-    // 2. Very subtle global yaw drift (0.002 rad/s)
-    this.group.rotation.z += delta * 0.002;
+    // 2. Very subtle global yaw drift (0.0015 rad/s)
+    this.group.rotation.z += delta * 0.0015;
 
     // 3. Zoom-based visibility & opacity falloff
-    // At normal colony view: barely visible / invisible
-    // When zooming out: smoothly fades in as the distant boundary
     let zoomFactor = 0.0;
     const camera = this.cameraController ? this.cameraController.camera : null;
 
     if (camera && camera.isOrthographicCamera) {
-      // Tactical Ortho Camera: default frustumSize is 24, max zoom-out is 75
+      // Tactical Ortho Camera:
+      // min: 5.5, default: 24.0, max: 75.0
+      // Normal view (24): zoomFactor <= 0.05 (and storm is off-screen at r >= 58 vs view r <= 25)
+      // Medium zoom (~45): zoomFactor = 0.60 (inner haze wisps subtly appear on horizon)
+      // Wide/max zoom (60-75): zoomFactor = 1.0 (storm wall clearly visible encircling horizon)
       const fSize = this.cameraController.frustumSize || 24;
-      zoomFactor = THREE.MathUtils.clamp((fSize - 18) / 36, 0.0, 1.0);
+      zoomFactor = THREE.MathUtils.clamp((fSize - 22) / 38, 0.0, 1.0);
     } else if (camera) {
-      // Perspective Camera: distance from colony center
+      // Perspective Camera (Cinematic mode):
       const dist = camera.position.distanceTo(this.centerPos);
-      zoomFactor = THREE.MathUtils.clamp((dist - 24) / 45, 0.0, 1.0);
+      zoomFactor = THREE.MathUtils.clamp((dist - 20) / 32, 0.0, 1.0);
     } else {
       zoomFactor = 0.5;
     }
 
+    // Hide completely when close to the colony
     if (zoomFactor <= 0.01) {
       this.group.visible = false;
       return;
@@ -166,18 +177,19 @@ export class DistantSandstormBoundary {
 
     // 4. Diurnal color interpolation (Day -> Sunset -> Night)
     if (nightFactor < 0.5) {
-      const t = nightFactor * 2.0; // 0.0 (day) to 1.0 (sunset)
+      const t = nightFactor * 2.0;
       this._currentColor.lerpColors(this.dayColor, this.sunsetColor, t);
     } else {
-      const t = (nightFactor - 0.5) * 2.0; // 0.0 (sunset) to 1.0 (night)
+      const t = (nightFactor - 0.5) * 2.0;
       this._currentColor.lerpColors(this.sunsetColor, this.nightColor, t);
     }
 
-    // 5. Apply opacity & color without allocating memory
+    // 5. Apply smooth opacity ramp and diurnal tint
     const mats = this.materials;
+    const effectiveAlphaMultiplier = 0.35 + 0.65 * zoomFactor;
     for (let i = 0; i < mats.length; i++) {
       const mat = mats[i];
-      mat.opacity = mat.userData.baseOpacity * zoomFactor;
+      mat.opacity = mat.userData.baseOpacity * effectiveAlphaMultiplier;
       mat.color.copy(this._currentColor);
     }
   }
