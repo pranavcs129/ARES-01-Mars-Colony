@@ -6,6 +6,7 @@ import { MarsDustAtmosphere } from './environment/MarsDustAtmosphere.js';
 import { ColonyLifeManager } from './environment/ColonyLifeManager.js';
 import { ColonyLoader } from './loaders/ColonyLoader.js';
 import { ColonyAnimator } from './environment/ColonyAnimator.js';
+import { DistantSandstormBoundary } from './environment/DistantSandstormBoundary.js';
 import { InfoOverlay } from './ui/InfoOverlay.js';
 import { InteractionManager } from './interaction/InteractionManager.js';
 import { SimulationManager } from './simulation/SimulationManager.js';
@@ -62,6 +63,7 @@ async function bootstrap() {
     const lighting = new Lighting(sceneManager.scene);
     const sky = new MarsSky(sceneManager.scene);
     const dust = new MarsDustAtmosphere(sceneManager.scene);
+    const sandstormBoundary = new DistantSandstormBoundary(sceneManager.scene, cameraController);
 
     // Dynamic environmental updater tied to the Sol clock & weather events
     let lifeManager = null;
@@ -86,6 +88,7 @@ async function bootstrap() {
         sky.update(hour, delta, isDustStorm);
         lighting.update(hour, delta, isDustStorm);
         dust.update(delta, isDustStorm);
+        sandstormBoundary.update(delta, nightFactor);
 
         if (lifeManager) {
           lifeManager.update(delta, isNight, isDustStorm);
