@@ -65,6 +65,7 @@ html, body {
   transform: translateX(-50%);
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
   gap: 10px;
   z-index: 40;
   pointer-events: auto;
@@ -105,9 +106,10 @@ html, body {
 
 /* Capsule 1: Colony Identity */
 .hud-identity-capsule {
-  padding: 0 14px 0 10px;
-  gap: 8px;
+  padding: 0 16px 0 13px;
+  gap: 10px;
   margin-right: 8px;
+  flex-shrink: 0;
 }
 
 .hud-capsule-icon-wrap {
@@ -183,8 +185,11 @@ html, body {
 
 /* Capsule 2: Sol & Time */
 .hud-time-capsule {
-  padding: 0 14px;
-  gap: 12px;
+  padding: 0 18px;
+  gap: 15px;
+  min-width: 154px;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .hud-time-sub {
@@ -204,6 +209,8 @@ html, body {
 .hud-sim-capsule {
   padding: 0 8px 0 10px;
   gap: 6px;
+  margin: 0 6px;
+  flex-shrink: 0;
 }
 
 .hud-ctrl-icon-btn {
@@ -2715,11 +2722,17 @@ html, body {
     height: 42px;
   }
   .hud-identity-capsule {
-    padding: 0 10px 0 8px;
+    padding: 0 12px 0 10px;
+    gap: 7px;
+    margin-right: 5px;
   }
   .hud-time-capsule {
-    padding: 0 10px;
-    gap: 8px;
+    padding: 0 14px;
+    gap: 10px;
+    min-width: auto;
+  }
+  .hud-sim-capsule {
+    margin: 0 4px;
   }
   .hud-resource-capsule {
     padding: 0 10px 0 8px;
@@ -2727,6 +2740,11 @@ html, body {
   }
   .hud-health-phase-capsule {
     padding: 0 10px 0 8px;
+  }
+  .hud-cinema-capsule {
+    padding: 0 13px 0 10px;
+    gap: 7px;
+    min-width: auto;
   }
 }
 
@@ -2740,11 +2758,29 @@ html, body {
   .hud-capsule {
     height: 38px;
   }
+  .hud-identity-capsule {
+    padding: 0 9px 0 7px;
+    gap: 6px;
+    margin-right: 3px;
+  }
+  .hud-time-capsule {
+    padding: 0 10px;
+    gap: 8px;
+    min-width: auto;
+  }
+  .hud-sim-capsule {
+    margin: 0 2px;
+  }
   .hud-resource-bar-track {
     width: 32px;
   }
   .hud-health-bar-track {
     width: 44px;
+  }
+  .hud-cinema-capsule {
+    padding: 0 10px 0 7px;
+    gap: 6px;
+    min-width: auto;
   }
 }
 
@@ -3083,9 +3119,15 @@ body.cinema-active .hover-tooltip {
 
 /* Top HUD Cinema Capsule */
 .hud-cinema-capsule {
+  padding: 0 16px 0 13px;
+  gap: 9px;
+  min-width: 98px;
+  justify-content: center;
+  font-family: inherit;
   cursor: pointer;
   border-color: rgba(245, 158, 11, 0.35);
   transition: all 0.25s ease;
+  flex-shrink: 0;
 }
 
 .hud-cinema-capsule:hover {
@@ -3099,6 +3141,7 @@ body.cinema-active .hover-tooltip {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .cinema-cam-btn {
