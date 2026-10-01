@@ -69,7 +69,12 @@ export class InteractionManager {
 
       const structureData = {
         ...meta,
+        id: nodeName,
+        name: meta.name || meta.title,
+        type: meta.type || nodeName.toUpperCase(),
+        object: child,
         node: child,
+        position: center,
         worldCenter: center,
         box,
         size,

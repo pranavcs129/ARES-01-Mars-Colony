@@ -1141,10 +1141,13 @@ export class InfoOverlay {
       this.dom.cinemaTimeText.textContent = `${snapshot.timeString} LOCAL`;
     }
     if (this.dom.cinemaCamShot && this.cameraController) {
-      if (this.cameraController.isTouring && this.cameraController.tourShots) {
-        const activeShot = this.cameraController.tourShots[this.cameraController.tourShotIndex];
-        if (activeShot && this.dom.cinemaCamShot.textContent !== activeShot.name) {
-          this.dom.cinemaCamShot.textContent = activeShot.name;
+      if (this.cameraController.isTouring) {
+        const activeStruct = this.cameraController.getActiveTourStructure
+          ? this.cameraController.getActiveTourStructure()
+          : (this.cameraController.tourShots ? this.cameraController.tourShots[this.cameraController.tourShotIndex] : null);
+        const shotName = activeStruct ? (activeStruct.name || activeStruct.title) : 'AUTOPILOT TOUR';
+        if (this.dom.cinemaCamShot.textContent !== shotName) {
+          this.dom.cinemaCamShot.textContent = shotName;
         }
       } else {
         const modeLabel = this.cameraController.mode === 'cinematic' ? 'ORBIT CAM' : 'TACTICAL 2.5D';

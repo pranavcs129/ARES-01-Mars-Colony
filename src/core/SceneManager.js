@@ -22,12 +22,14 @@ export class SceneManager {
     // Use transparent/null background to allow the dynamic MarsSky skydome to render
     this.scene.background = null;
 
-    // Atmospheric depth fog (subtle muted copper-brown haze, very light)
-    this.defaultFogColor = new THREE.Color(0x684534);
-    this.nightFogColor = new THREE.Color(0x221a24);
-    this.stormFogColor = new THREE.Color(0x7c4226);
-    this._currentBaseFog = new THREE.Color(0x684534);
-    this.scene.fog = new THREE.FogExp2(0x684534, 0.0008);
+    // Physically subtle, depth-based atmospheric haze (eliminates opaque orange overlay)
+    this.defaultFogColor = new THREE.Color(0x66483b); // Subtle, natural muted regolith umber (reduces orange tint significantly)
+    this.nightFogColor = new THREE.Color(0x1e1514);   // Matches nighttime horizon
+    this.stormFogColor = new THREE.Color(0x4e3428);   // Muted earthy storm dust
+    this._currentBaseFog = new THREE.Color(0x66483b);
+    this.tacticalFog = new THREE.Fog(0x66483b, 175, 450); // Foreground & colony crystal clear (0% fog at 175), gradual depth fade to horizon
+    this.cinematicFog = new THREE.Fog(0x66483b, 35, 180); // Subtle cinematic perspective haze
+    this.scene.fog = this.tacticalFog;
 
     // 2. WebGL Renderer
     const width = this.container.clientWidth || window.innerWidth || 800;
@@ -142,9 +144,19 @@ export class SceneManager {
     if (!this._currentBaseFog) this._currentBaseFog = new THREE.Color();
     this._currentBaseFog.lerpColors(this.defaultFogColor, this.nightFogColor, nightT);
 
-    const baseDensity = THREE.MathUtils.lerp(0.0008, 0.0005, nightT);
-    this.scene.fog.density = baseDensity + clamped * 0.0035;
-    this.scene.fog.color.lerpColors(this._currentBaseFog, this.stormFogColor, clamped);
+    const isCinematic = this.cameraController && this.cameraController.mode === 'cinematic';
+    const activeFog = isCinematic ? this.cinematicFog : this.tacticalFog;
+    this.scene.fog = activeFog;
+
+    activeFog.color.lerpColors(this._currentBaseFog, this.stormFogColor, clamped);
+
+    if (isCinematic) {
+      activeFog.near = THREE.MathUtils.lerp(35, 18, clamped);
+      activeFog.far = THREE.MathUtils.lerp(180, 85, clamped);
+    } else {
+      activeFog.near = THREE.MathUtils.lerp(175, 115, clamped);
+      activeFog.far = THREE.MathUtils.lerp(450, 260, clamped);
+    }
   }
 
   onWindowResize() {

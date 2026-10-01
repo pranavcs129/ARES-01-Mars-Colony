@@ -80,8 +80,9 @@ export class Lighting {
    * @param {number} hour Sol hour (0.0 to 24.0)
    * @param {number} delta Delta seconds
    * @param {boolean} isDustStorm Whether dust storm event is active
+   * @param {boolean} isSolarFlare Whether solar flare event is active
    */
-  update(hour = 12.0, delta = 0.016, isDustStorm = false) {
+  update(hour = 12.0, delta = 0.016, isDustStorm = false, isSolarFlare = false) {
     const solProgress = (hour / 24.0) * Math.PI * 2 - Math.PI / 2;
     const sunElevation = Math.sin(solProgress);
     const sunAzimuth = Math.cos(solProgress);
@@ -130,12 +131,26 @@ export class Lighting {
       this.ambientLight.intensity = THREE.MathUtils.lerp(0.65, 0.38, t); // Ambient preserves terrain texture
     }
 
-    // Apply dust storm attenuation if active
-    if (isDustStorm) {
-      this.dirLight.intensity *= 0.45;
-      this.hemiLight.intensity *= 0.75;
-      this._targetDir.setHex(0xb05e38);
-      this._targetHemiSky.setHex(0x7c4228);
+    // Smooth environmental event factor dampings
+    const targetStorm = isDustStorm ? 1.0 : 0.0;
+    this.stormFactor = (this.stormFactor || 0.0) + (targetStorm - (this.stormFactor || 0.0)) * Math.min(1.0, delta * 1.5);
+
+    const targetFlare = isSolarFlare ? 1.0 : 0.0;
+    this.flareFactor = (this.flareFactor || 0.0) + (targetFlare - (this.flareFactor || 0.0)) * Math.min(1.0, delta * 2.0);
+
+    // Apply dust storm attenuation: direct sunlight dims softly, reducing solar panel illumination
+    if (this.stormFactor > 0.001) {
+      this.dirLight.intensity *= (1.0 - this.stormFactor * 0.42);
+      this.hemiLight.intensity *= (1.0 - this.stormFactor * 0.20);
+      this._targetDir.lerp(new THREE.Color(0xb05e38), this.stormFactor * 0.45);
+      this._targetHemiSky.lerp(new THREE.Color(0x7c4228), this.stormFactor * 0.35);
+    }
+
+    // Apply solar flare space-weather effect: very subtle warm lift in sky ambient
+    if (this.flareFactor > 0.001) {
+      this.dirLight.intensity *= (1.0 + this.flareFactor * 0.08);
+      this.hemiLight.intensity *= (1.0 + this.flareFactor * 0.12);
+      this._targetHemiSky.lerp(new THREE.Color(0xc27a4e), this.flareFactor * 0.20);
     }
 
     // Apply colors smoothly

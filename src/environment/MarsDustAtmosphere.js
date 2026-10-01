@@ -1,14 +1,16 @@
 import * as THREE from 'three';
 
 /**
- * MarsDustAtmosphere — Ultra-Lightweight, Subtle Martian Atmospheric Haze.
- * Restrained to 55 microscopic motes for depth cueing without covering terrain or structures.
- * Zero per-frame memory allocation.
+ * MarsDustAtmosphere — Ultra-Lightweight, Physically Subtle Martian Atmospheric Haze.
+ * - Restrained to 45 microscopic motes for delicate ambient depth without covering terrain or structures.
+ * - Near-camera depth fade ensures particles never obstruct foreground view.
+ * - Muted natural regolith color palette (eliminating harsh orange tint).
+ * - Zero per-frame memory allocation.
  */
 export class MarsDustAtmosphere {
   constructor(scene) {
     this.scene = scene;
-    this.particleCount = 55; // Extremely lightweight, subtle
+    this.particleCount = 45; // Subtle, non-intrusive dust motes
     this.elapsed = 0;
     this.stormFactor = 0.0;
 
@@ -38,8 +40,8 @@ export class MarsDustAtmosphere {
       uniforms: {
         time: { value: 0 },
         stormFactor: { value: 0.0 },
-        baseColor: { value: new THREE.Color(0x7c5844) },  // Muted natural regolith tan
-        stormColor: { value: new THREE.Color(0x8a4c32) }  // Muted copper
+        baseColor: { value: new THREE.Color(0x5a4236) },  // Muted natural regolith dust (no orange glare)
+        stormColor: { value: new THREE.Color(0x643d2c) }  // Muted earthy storm copper
       },
       vertexShader: `
         attribute vec4 aRandom;
@@ -50,23 +52,25 @@ export class MarsDustAtmosphere {
         void main() {
           vec3 pos = position;
 
-          float windSpeed = 1.4 + stormFactor * 10.0;
+          float windSpeed = 1.2 + stormFactor * 8.0;
           float t = time * windSpeed * aRandom.x;
 
           pos.x += mod(t + aRandom.w * 35.0, 85.0) - 42.5;
           pos.z += mod(t * 0.3 + aRandom.w * 20.0, 85.0) - 42.5;
-          pos.y += sin(time * 0.7 * aRandom.y + aRandom.w) * (0.3 + stormFactor * 1.2);
+          pos.y += sin(time * 0.6 * aRandom.y + aRandom.w) * (0.2 + stormFactor * 0.8);
           pos.y = mod(pos.y, 14.0) + 0.4;
 
           vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
           gl_Position = projectionMatrix * mvPosition;
 
-          // Microscopic point size (0.8px to 2.2px) - zero blurry blobs
-          float dist = -mvPosition.z;
-          float baseSize = aRandom.z * (1.4 + stormFactor * 0.8);
-          gl_PointSize = clamp(baseSize / dist * 50.0, 0.8, 2.2);
+          // Physically subtle point size (0.5px to 1.8px) with distance attenuation
+          float dist = max(0.1, -mvPosition.z);
+          float baseSize = aRandom.z * (1.1 + stormFactor * 0.6);
+          gl_PointSize = clamp(baseSize / dist * 35.0, 0.5, 1.8);
 
-          vAlpha = clamp(1.0 - (pos.y / 14.0), 0.05, 0.6);
+          // Distance-based depth fade: particles close to camera fade out completely
+          float nearFade = smoothstep(6.0, 18.0, dist);
+          vAlpha = clamp(1.0 - (pos.y / 14.0), 0.05, 0.5) * nearFade;
         }
       `,
       fragmentShader: `
@@ -83,8 +87,8 @@ export class MarsDustAtmosphere {
           float soft = smoothstep(0.5, 0.1, d);
           vec3 col = mix(baseColor, stormColor, stormFactor);
 
-          // Faint, non-distracting opacity
-          float alpha = soft * vAlpha * (0.06 + stormFactor * 0.14);
+          // Faint, non-distracting opacity (under 0.035 normal, under 0.075 storm)
+          float alpha = soft * vAlpha * (0.035 + stormFactor * 0.075);
           gl_FragColor = vec4(col, alpha);
         }
       `,

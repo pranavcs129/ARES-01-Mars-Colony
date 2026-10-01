@@ -81,12 +81,12 @@ async function bootstrap() {
           nightFactor = (hour - 17.5) / 2.0;
         }
         const isNight = nightFactor > 0.45;
-        const isDustStorm = simulationManager
-          ? simulationManager.eventManager.activeEvents.some(e => e.type === 'DUST_STORM')
-          : false;
+        const activeEvents = simulationManager ? (simulationManager.eventManager?.activeEvents || []) : [];
+        const isDustStorm = activeEvents.some(e => e.type === 'DUST_STORM');
+        const isSolarFlare = activeEvents.some(e => e.type === 'SOLAR_FLARE');
 
         sky.update(hour, delta, isDustStorm);
-        lighting.update(hour, delta, isDustStorm);
+        lighting.update(hour, delta, isDustStorm, isSolarFlare);
         dust.update(delta, isDustStorm);
         sandstormBoundary.update(delta, nightFactor);
 
@@ -127,6 +127,7 @@ async function bootstrap() {
 
     // 8. Initialize ambient colony animations (solar panel tracking, emissive pulses)
     animator = new ColonyAnimator(sceneManager.scene, result.colony);
+    animator.setSimulationManager(simulationManager);
     sceneManager.registerUpdatable(animator);
     console.log('🌬️ Colony ambient animations active.');
 
@@ -154,6 +155,10 @@ async function bootstrap() {
 
     overlay.setInteractionManager(interactionManager);
     console.log('🎮 Colony structure interaction online.');
+
+    // 10. Mount shared structure identity registry into Cinematic Director Tour
+    cameraController.setColony(result.colony, interactionManager.structuresMap);
+    console.log('🎬 Cinematic Autopilot Director Tour initialized with verified structure identities.');
 
   } catch (err) {
     console.error('Fatal initialization error:', err);

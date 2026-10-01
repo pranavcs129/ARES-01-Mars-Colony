@@ -1,4 +1,131 @@
 import * as THREE from 'three';
+import { COLONY_STRUCTURES } from '../interaction/ColonyData.js';
+
+/**
+ * Curated Autopilot Director Tour Stops in canonical operational sequence:
+ * Every stop is driven by its unique structure ID, resolving its real Three.js object,
+ * world position, and telemetry title from the exact same source of truth.
+ */
+export const TOUR_STOP_IDS = [
+  'rocket',          // Launching Pad
+  'central_hub',      // Central Command Core
+  'solar',            // Solar Power Array
+  'greenhouse',       // CEA Greenhouse / Bio-Dome
+  'research_lab',     // Research Centre
+  'power',            // Power System
+  'habitat',          // Habitat
+  'water',            // Water Extraction
+  'mining',           // Automated Mining
+  'oxygen',           // Oxygen Generation
+  'storage_depot'     // Storage Depot / Storage
+];
+
+/**
+ * Bespoke camera framing parameters per structure:
+ * Camera angle, distance multiplier, elevation, and subtle target Y offset
+ * ensuring the selected facility is centered in the cinematic view.
+ */
+export const TOUR_FRAMING_CONFIG = {
+  rocket: {
+    angle: 0.75,
+    distanceMult: 2.8,
+    minDistance: 19.0,
+    elevationMult: 0.95,
+    minElevation: 5.5,
+    targetYOffset: 2.2,
+    duration: 9.0
+  },
+  central_hub: {
+    angle: 1.15,
+    distanceMult: 2.6,
+    minDistance: 14.0,
+    elevationMult: 0.85,
+    minElevation: 4.2,
+    targetYOffset: 1.2,
+    duration: 8.5
+  },
+  solar: {
+    angle: 2.45,
+    distanceMult: 2.5,
+    minDistance: 16.0,
+    elevationMult: 0.90,
+    minElevation: 5.0,
+    targetYOffset: 0.8,
+    duration: 8.5
+  },
+  greenhouse: {
+    angle: 0.85,
+    distanceMult: 2.6,
+    minDistance: 14.0,
+    elevationMult: 0.85,
+    minElevation: 4.2,
+    targetYOffset: 1.0,
+    duration: 8.5
+  },
+  research_lab: {
+    angle: 1.85,
+    distanceMult: 2.7,
+    minDistance: 14.0,
+    elevationMult: 0.85,
+    minElevation: 4.5,
+    targetYOffset: 1.1,
+    duration: 8.5
+  },
+  power: {
+    angle: 3.25,
+    distanceMult: 2.7,
+    minDistance: 14.5,
+    elevationMult: 0.90,
+    minElevation: 4.8,
+    targetYOffset: 1.2,
+    duration: 8.5
+  },
+  habitat: {
+    angle: 0.45,
+    distanceMult: 2.7,
+    minDistance: 15.0,
+    elevationMult: 0.85,
+    minElevation: 4.5,
+    targetYOffset: 1.1,
+    duration: 8.5
+  },
+  water: {
+    angle: 2.15,
+    distanceMult: 2.7,
+    minDistance: 14.0,
+    elevationMult: 0.85,
+    minElevation: 4.5,
+    targetYOffset: 1.0,
+    duration: 8.5
+  },
+  mining: {
+    angle: 0.95,
+    distanceMult: 2.7,
+    minDistance: 14.5,
+    elevationMult: 0.90,
+    minElevation: 4.8,
+    targetYOffset: 1.2,
+    duration: 8.5
+  },
+  oxygen: {
+    angle: 2.85,
+    distanceMult: 2.7,
+    minDistance: 13.5,
+    elevationMult: 0.85,
+    minElevation: 4.2,
+    targetYOffset: 1.0,
+    duration: 8.5
+  },
+  storage_depot: {
+    angle: 0.85,
+    distanceMult: 2.7,
+    minDistance: 13.5,
+    elevationMult: 0.85,
+    minElevation: 4.2,
+    targetYOffset: 1.0,
+    duration: 8.5
+  }
+};
 
 /**
  * CinematicCameraController — Unified Dual-Mode Camera Engine.
@@ -55,51 +182,13 @@ export class CinematicCameraController {
     this.cameraSway = new THREE.Vector3();
     this._shotCamPos = new THREE.Vector3(); // Pre-allocated vector for tour keyframes
 
-    // Curated Cinematic Tour Shot Keyframes
-    this.tourShots = [
-      {
-        name: 'COLONY OVERVIEW',
-        pos: new THREE.Vector3(26, 16, 26),
-        target: new THREE.Vector3(0, 0.5, 0),
-        duration: 9.0,
-        desc: 'Orbital Reconnaissance: Ares-01 Settlement'
-      },
-      {
-        name: 'CEA BIO-DOME',
-        pos: new THREE.Vector3(-8, 3.2, 7.5),
-        target: new THREE.Vector3(-2.5, 1.2, 2.0),
-        duration: 8.5,
-        desc: 'Biosphere Inspection: Hydroponic Canopy'
-      },
-      {
-        name: 'SOLAR POWER ARRAY',
-        pos: new THREE.Vector3(14, 4.0, -11),
-        target: new THREE.Vector3(7.0, 1.5, -5.5),
-        duration: 8.0,
-        desc: 'Photovoltaic Sector: Sun-Tracking Collectors'
-      },
-      {
-        name: 'CORE COMMAND & COMMS',
-        pos: new THREE.Vector3(3.5, 4.8, 12),
-        target: new THREE.Vector3(-0.2, 2.2, 0.0),
-        duration: 8.5,
-        desc: 'Central Hub: Deep Space Earth Relay Link'
-      },
-      {
-        name: 'MINING & LOGISTICS',
-        pos: new THREE.Vector3(-14, 5.0, 10),
-        target: new THREE.Vector3(-6.0, 1.0, 4.5),
-        duration: 8.5,
-        desc: 'Subsurface Borehole & Automated Excavator'
-      },
-      {
-        name: 'STARSHIP LAUNCH PAD',
-        pos: new THREE.Vector3(-18, 7.0, -12),
-        target: new THREE.Vector3(-9.0, 1.8, -5.0),
-        duration: 9.0,
-        desc: 'Surface Landing Zone & Starship Gantry'
-      }
-    ];
+    // Shared Colony & Structure Tour State
+    this.colonyRoot = null;
+    this.structuresMap = null;
+    this.tourStopIds = [...TOUR_STOP_IDS];
+    this.activeTourStructure = null;
+    this.currentTourShot = null;
+    this.tourShots = [];
 
     // Interaction controls
     this.keys = {
@@ -284,12 +373,188 @@ export class CinematicCameraController {
     return this.mode;
   }
 
+  setColony(colonyRoot, structuresMap = null) {
+    this.colonyRoot = colonyRoot;
+    this.structuresMap = structuresMap;
+    this.buildTourShots();
+  }
+
+  buildTourShots() {
+    this.tourShots = [];
+    for (let i = 0; i < this.tourStopIds.length; i++) {
+      const id = this.tourStopIds[i];
+      const struct = this.resolveStructure(id);
+      if (struct) {
+        const shot = this.buildShotFromStructure(struct);
+        this.tourShots.push(shot);
+      }
+    }
+    if (this.tourShots.length > 0 && !this.activeTourStructure) {
+      this.activeTourStructure = this.tourShots[0].structure;
+      this.currentTourShot = this.tourShots[0];
+    }
+  }
+
+  resolveStructure(id) {
+    // 1. Check cached structuresMap (from InteractionManager)
+    if (this.structuresMap && this.structuresMap.has(id)) {
+      const data = this.structuresMap.get(id);
+      return {
+        id: data.id || id,
+        name: data.name || data.title,
+        type: data.type || (data.category || id.toUpperCase()),
+        object: data.object || data.node,
+        position: data.position || data.worldCenter,
+        box: data.box,
+        radius: data.radius || 3.0
+      };
+    }
+
+    // 2. Check alias mapping if not directly found
+    const aliases = {
+      storage_depot: ['storage_depot', 'storage', 'battery'],
+      rocket: ['rocket', 'launch', 'lander'],
+      central_hub: ['central_hub', 'hub', 'command'],
+      research_lab: ['research_lab', 'science', 'lab'],
+      power: ['power', 'nuclear', 'fission']
+    };
+
+    if (aliases[id] && this.structuresMap) {
+      for (const alias of aliases[id]) {
+        if (this.structuresMap.has(alias)) {
+          const data = this.structuresMap.get(alias);
+          const meta = COLONY_STRUCTURES[id] || COLONY_STRUCTURES[alias] || {};
+          return {
+            id: id,
+            name: meta.name || meta.title || data.name || data.title,
+            type: meta.type || data.type || id.toUpperCase(),
+            object: data.object || data.node,
+            position: data.position || data.worldCenter,
+            box: data.box,
+            radius: data.radius || 3.0
+          };
+        }
+      }
+    }
+
+    // 3. Fallback: Search colonyRoot children directly
+    if (this.colonyRoot && this.colonyRoot.children) {
+      const child = this.colonyRoot.children.find(c => c.name === id || (c.name && c.name.startsWith(id)));
+      if (child) {
+        child.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(child);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const radius = Math.max(1.8, Math.hypot(size.x, size.z) * 0.52);
+        const meta = COLONY_STRUCTURES[id] || {};
+        return {
+          id: id,
+          name: meta.name || meta.title || id.toUpperCase().replace('_', ' '),
+          type: meta.type || id.toUpperCase(),
+          object: child,
+          position: center,
+          box,
+          radius
+        };
+      }
+    }
+
+    return null;
+  }
+
+  buildShotFromStructure(struct) {
+    const framing = TOUR_FRAMING_CONFIG[struct.id] || {
+      angle: 0.85,
+      distanceMult: 2.6,
+      minDistance: 14.0,
+      elevationMult: 0.85,
+      minElevation: 4.2,
+      targetYOffset: 1.0,
+      duration: 8.5
+    };
+
+    const target = new THREE.Vector3(
+      struct.position.x,
+      struct.position.y + framing.targetYOffset,
+      struct.position.z
+    );
+
+    const dist = Math.max(framing.minDistance, struct.radius * framing.distanceMult);
+    const height = Math.max(framing.minElevation, struct.radius * framing.elevationMult);
+
+    return {
+      id: struct.id,
+      name: struct.name,
+      type: struct.type,
+      object: struct.object,
+      position: struct.position,
+      target: target,
+      angle: framing.angle,
+      distance: dist,
+      height: height,
+      duration: framing.duration || 8.5,
+      structure: struct
+    };
+  }
+
+  prepareTourShot(targetIndex) {
+    if (!this.tourStopIds || this.tourStopIds.length === 0) return false;
+
+    const totalStops = this.tourStopIds.length;
+    let attempts = 0;
+    let resolved = null;
+    let idx = targetIndex % totalStops;
+    if (idx < 0) idx += totalStops;
+
+    while (attempts < totalStops) {
+      const structureId = this.tourStopIds[idx];
+      resolved = this.resolveStructure(structureId);
+      if (resolved && resolved.object && resolved.position) {
+        break;
+      }
+      console.warn(`[Autopilot Tour] Structure '${structureId}' cannot be resolved. Skipping shot.`);
+      idx = (idx + 1) % totalStops;
+      attempts++;
+    }
+
+    if (!resolved || attempts >= totalStops) {
+      console.error('[Autopilot Tour] No valid structures resolved for tour.');
+      return false;
+    }
+
+    this.tourShotIndex = idx;
+    this.tourShotTime = 0;
+    this.activeTourStructure = resolved;
+    this.currentTourShot = this.buildShotFromStructure(resolved);
+
+    // Keep legacy tourShots array in sync for external telemetry
+    this.tourShots[this.tourShotIndex] = this.currentTourShot;
+    return true;
+  }
+
+  advanceTourShot() {
+    this.tourShotTime = 0;
+    const nextIndex = (this.tourShotIndex + 1) % this.tourStopIds.length;
+    this.prepareTourShot(nextIndex);
+  }
+
+  getActiveTourStructure() {
+    return this.activeTourStructure;
+  }
+
+  getActiveTourShot() {
+    return this.currentTourShot;
+  }
+
   toggleTour() {
     if (this.mode !== 'cinematic') {
       this.setMode('cinematic');
     }
     this.isTouring = !this.isTouring;
     this.tourShotTime = 0;
+    if (this.isTouring) {
+      this.prepareTourShot(this.tourShotIndex);
+    }
     return this.isTouring;
   }
 
@@ -402,26 +667,36 @@ export class CinematicCameraController {
   updateCinematic(delta) {
     // 1. Process Tour Keyframe interpolation
     if (this.isTouring) {
-      this.tourShotTime += delta;
-      const currentShot = this.tourShots[this.tourShotIndex];
-
-      if (this.tourShotTime >= currentShot.duration) {
-        this.tourShotTime = 0;
-        this.tourShotIndex = (this.tourShotIndex + 1) % this.tourShots.length;
+      if (!this.currentTourShot || !this.activeTourStructure) {
+        this.prepareTourShot(this.tourShotIndex);
       }
 
-      const activeShot = this.tourShots[this.tourShotIndex];
-      const progress = this.tourShotTime / activeShot.duration;
-      // Smooth sinusoidal shot drift
-      const driftAngle = progress * 0.45;
+      this.tourShotTime += delta;
+      const duration = this.currentTourShot?.duration || 8.5;
 
-      this._shotCamPos.copy(activeShot.pos);
-      this._shotCamPos.x += Math.sin(driftAngle) * 3.5;
-      this._shotCamPos.z += Math.cos(driftAngle) * 2.5;
+      if (this.tourShotTime >= duration) {
+        this.advanceTourShot();
+      }
 
-      this.perspCamera.position.lerp(this._shotCamPos, Math.min(1.0, delta * 2.0));
-      this.currentCinematicTarget.lerp(activeShot.target, Math.min(1.0, delta * 2.5));
-      this.perspCamera.lookAt(this.currentCinematicTarget);
+      if (this.currentTourShot && this.currentTourShot.position) {
+        const progress = Math.min(1.0, this.tourShotTime / duration);
+        // Smooth sinusoidal shot drift around structure
+        const drift = (progress - 0.5) * 0.22;
+        const curAngle = this.currentTourShot.angle + drift;
+        const dX = Math.sin(curAngle) * this.currentTourShot.distance;
+        const dZ = Math.cos(curAngle) * this.currentTourShot.distance;
+        const dY = this.currentTourShot.height + Math.sin(progress * Math.PI) * 0.35;
+
+        this._shotCamPos.set(
+          this.currentTourShot.position.x + dX,
+          this.currentTourShot.position.y + dY,
+          this.currentTourShot.position.z + dZ
+        );
+
+        this.perspCamera.position.lerp(this._shotCamPos, Math.min(1.0, delta * 2.0));
+        this.currentCinematicTarget.lerp(this.currentTourShot.target, Math.min(1.0, delta * 2.5));
+        this.perspCamera.lookAt(this.currentCinematicTarget);
+      }
       return;
     }
 

@@ -8,6 +8,8 @@ import { STRUCTURE_IMAGE_MAP } from '../data/FacilityConfig.js';
 export const COLONY_STRUCTURES = {
   greenhouse: {
     id: 'greenhouse',
+    type: 'CEA_GREENHOUSE',
+    name: 'CEA BIO-DOME',
     sector: 'SECTOR BETA • BIOSYSTEMS',
     title: 'CEA BIO-DOME',
     subtitle: 'Controlled Environment Agriculture',
@@ -61,8 +63,10 @@ export const COLONY_STRUCTURES = {
 
   habitat: {
     id: 'habitat',
+    type: 'HABITAT',
+    name: 'HABITAT',
     sector: 'SECTOR ALPHA • HABITATION',
-    title: 'PRIMARY HABITAT',
+    title: 'HABITAT',
     subtitle: 'Crew Quarters & Life Support',
     role: 'Living Quarters & Environmental Control',
     status: 'OPERATIONAL',
@@ -110,8 +114,10 @@ export const COLONY_STRUCTURES = {
 
   power: {
     id: 'power',
+    type: 'POWER_SYSTEM',
+    name: 'POWER SYSTEM',
     sector: 'SECTOR EPSILON • ENERGY',
-    title: 'FISSION POWER STATION',
+    title: 'POWER SYSTEM',
     subtitle: 'Kilowatt-Class Surface Reactor',
     role: 'Colony Baseload Power Generation',
     status: 'OPERATIONAL',
@@ -158,6 +164,8 @@ export const COLONY_STRUCTURES = {
 
   water: {
     id: 'water',
+    type: 'WATER_EXTRACTION',
+    name: 'WATER EXTRACTION',
     sector: 'SECTOR GAMMA • ISRU',
     title: 'WATER EXTRACTION',
     subtitle: 'Atmospheric Condenser & Well',
@@ -206,8 +214,10 @@ export const COLONY_STRUCTURES = {
 
   research_lab: {
     id: 'research_lab',
+    type: 'RESEARCH_CENTRE',
+    name: 'RESEARCH CENTRE',
     sector: 'SECTOR DELTA • SCIENCE',
-    title: 'RESEARCH FACILITY',
+    title: 'RESEARCH CENTRE',
     subtitle: 'Astrobiology & Geology Lab',
     role: 'Geological & Biological Research',
     status: 'OPERATIONAL',
@@ -254,8 +264,10 @@ export const COLONY_STRUCTURES = {
 
   rocket: {
     id: 'rocket',
+    type: 'LAUNCHING_PAD',
+    name: 'LAUNCHING PAD',
     sector: 'SECTOR ALPHA • LOGISTICS',
-    title: 'LANDING ZONE',
+    title: 'LAUNCHING PAD',
     subtitle: 'Sub-Orbital Starship Platform',
     role: 'Surface Landing & Cargo Logistics',
     status: 'READY',
@@ -302,6 +314,8 @@ export const COLONY_STRUCTURES = {
 
   solar: {
     id: 'solar',
+    type: 'SOLAR_ARRAY',
+    name: 'SOLAR POWER ARRAY',
     sector: 'SECTOR EPSILON • ENERGY',
     title: 'SOLAR POWER ARRAY',
     subtitle: 'Photovoltaic Tracking Collectors',
@@ -350,8 +364,10 @@ export const COLONY_STRUCTURES = {
 
   central_hub: {
     id: 'central_hub',
+    type: 'COMMAND_CORE',
+    name: 'CENTRAL COMMAND CORE',
     sector: 'SECTOR ZERO • CORE COMMAND',
-    title: 'CENTRAL OPERATIONS',
+    title: 'CENTRAL COMMAND CORE',
     subtitle: 'Core Command & Deep-Space Relay',
     role: 'Colony Synchronization & Earth Comms',
     status: 'OPERATIONAL',
@@ -398,6 +414,8 @@ export const COLONY_STRUCTURES = {
 
   oxygen: {
     id: 'oxygen',
+    type: 'OXYGEN_GENERATION',
+    name: 'OXYGEN GENERATION',
     sector: 'SECTOR GAMMA • ISRU',
     title: 'OXYGEN GENERATION',
     subtitle: 'MOXIE CO2 Electrolysis Plant',
@@ -446,6 +464,8 @@ export const COLONY_STRUCTURES = {
 
   battery: {
     id: 'battery',
+    type: 'STORAGE',
+    name: 'ENERGY STORAGE',
     category: 'POWER SYSTEMS',
     sector: 'SECTOR GAMMA • ENERGY',
     title: 'ENERGY STORAGE',
@@ -495,6 +515,8 @@ export const COLONY_STRUCTURES = {
 
   storage_depot: {
     id: 'storage_depot',
+    type: 'STORAGE_DEPOT',
+    name: 'STORAGE DEPOT',
     category: 'RESOURCE STORAGE',
     sector: 'SECTOR ZETA • LOGISTICS',
     title: 'STORAGE DEPOT',
@@ -544,6 +566,8 @@ export const COLONY_STRUCTURES = {
 
   mining: {
     id: 'mining',
+    type: 'AUTOMATED_MINING',
+    name: 'AUTOMATED MINING',
     sector: 'SECTOR ETA • EXTRACTION',
     title: 'AUTOMATED MINING',
     subtitle: 'Subsurface Borehole & Regolith Excavator',
